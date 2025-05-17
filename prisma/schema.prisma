@@ -48,6 +48,7 @@ model Cart {
   user      User       @relation(fields: [userId], references: [id])
   userId    String     @unique
   items     CartItem[]
+  createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
 
@@ -89,7 +90,7 @@ model Coupon {
   code          String   @unique
   discountType  String
   discountValue Float
-  usageLimit    Int?     
+  usageLimit    Int?
   usedCount     Int      @default(0)
   expiresAt     DateTime?
   orders        Order[]
@@ -108,10 +109,10 @@ model Address {
 }
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  action    String
-  entity    String
-  entityId  String
+  id          String   @id @default(uuid())
+  action      String
+  entity      String
+  entityId    String
   performedBy String
-  timestamp DateTime @default(now())
+  timestamp   DateTime @default(now())
 }
