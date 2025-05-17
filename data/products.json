@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "name": "Organic Apple",
+    "price": 30,
+    "image": "/images/apple.jpg"
+  },
+  {
+    "id": "2",
+    "name": "Fresh Carrot",
+    "price": 20,
+    "image": "/images/carrot.jpg"
+  },
+  {
+    "id": "3",
+    "name": "Green Lettuce",
+    "price": 25,
+    "image": "/images/lettuce.jpg"
+  }
+]
