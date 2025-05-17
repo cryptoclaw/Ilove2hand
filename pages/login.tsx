@@ -1,50 +1,48 @@
 // pages/login.tsx
+"use client";
 import { useState } from "react";
-import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { useAuth } from "../context/AuthContext";
+import Layout from "@/components/Layout";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(form.email, form.password);
-      router.push("/");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message);
     }
   };
 
   return (
     <Layout>
-      <div className="max-w-md mx-auto mt-8 p-4">
+      <div className="max-w-md mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Login</h1>
         {error && <p className="text-red-500 mb-2">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4">
           <input
-            type="email"
             name="email"
-            value={form.email}
-            onChange={handleChange}
+            type="email"
             placeholder="Email"
+            value={form.email}
+            onChange={onChange}
             required
             className="w-full border p-2 rounded"
           />
           <input
-            type="password"
             name="password"
-            value={form.password}
-            onChange={handleChange}
+            type="password"
             placeholder="Password"
+            value={form.password}
+            onChange={onChange}
             required
             className="w-full border p-2 rounded"
           />
