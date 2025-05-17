@@ -58,19 +58,24 @@ export default async function handler(
       description,
       price: priceRaw,
       stock: stockRaw,
+      salePrice: saleRaw,
       categoryId,
     } = req.body as Record<string, string>;
 
+    // Validation
     if (!name?.trim()) {
       return res.status(400).json({ error: "Name is required" });
     }
-
     const price = parseFloat(priceRaw);
     const stock = parseInt(stockRaw, 10);
-    if (isNaN(price) || isNaN(stock)) {
-      return res.status(400).json({ error: "Invalid price or stock" });
+    const salePrice = saleRaw ? parseFloat(saleRaw) : null;
+    if (isNaN(price) || isNaN(stock) || (saleRaw && isNaN(salePrice!))) {
+      return res
+        .status(400)
+        .json({ error: "Invalid price, stock, or salePrice" });
     }
 
+    // เตรียมข้อมูลที่จะสร้าง
     const imageUrl = file ? `/uploads/${file.filename}` : null;
     const data: any = {
       name,
@@ -78,8 +83,11 @@ export default async function handler(
       price,
       stock,
       imageUrl,
+      salePrice, // เพิ่มฟิลด์นี้
     };
-    if (categoryId) data.categoryId = categoryId;
+    if (categoryId) {
+      data.category = { connect: { id: categoryId } };
+    }
 
     try {
       const product = await prisma.product.create({ data });

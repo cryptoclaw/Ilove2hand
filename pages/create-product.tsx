@@ -107,6 +107,13 @@ export default function CreateProductPage() {
           className="border p-2 w-full"
         />
         <input
+          name="salePrice"
+          type="number"
+          onChange={onChange}
+          placeholder="ราคาลด (ไม่บังคับ)"
+          className="border p-2 w-full"
+        />
+        <input
           name="stock"
           type="number"
           onChange={onChange}

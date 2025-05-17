@@ -18,9 +18,9 @@ export default function Navbar() {
 
   return (
     <nav className="bg-green-100 p-4 flex justify-between items-center">
-      {/* Left: brand */}
-      <Link href="/" className="font-bold text-xl text-green-800">
-        ICN_FREEZE
+      {/* Left: brand as logo image */}
+      <Link href="/" className="flex items-center">
+        <img src="/images/logo.png" alt="ICN_FREEZE" className="h-20 w-auto" />
       </Link>
 
       {/* Center: nav links */}
