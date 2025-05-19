@@ -66,6 +66,20 @@ export default async function handler(
     return res.status(200).json(item);
   }
 
+  // ลบสินค้าออกจากตะกร้า
+  if (req.method === "DELETE") {
+    const { itemId } = req.body as { itemId?: string };
+    if (!itemId) {
+      return res.status(400).json({ error: "Missing itemId" });
+    }
+    try {
+      await prisma.cartItem.delete({ where: { id: itemId } });
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
   // อื่น ๆ → ไม่อนุญาต
   res.setHeader("Allow", ["GET", "POST"]);
   res.status(405).end(`Method ${req.method} Not Allowed`);

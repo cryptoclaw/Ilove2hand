@@ -3,9 +3,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* เพิ่ม CSS ด้านล่างเพื่อเปลี่ยนสีพื้นหลังทั้งแอป */
-html,
-body {
-  background-color: #ebf3ec;
-}

@@ -7,6 +7,7 @@ import DiscountCarousel from "@/components/DiscountCarousel"; // <= นำเข
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 import { Product } from "@/types/product";
+import SubBanner from "@/components/SubBanner"; // เพิ่ม import
 
 interface HomeProps {
   featured: Product[];
@@ -18,10 +19,10 @@ export default function HomePage({ featured, onSale }: HomeProps) {
     <Layout>
       {/* ส่วน Banner หลัก */}
       <Banner />
-
       {/* **ตรงนี้** เพิ่ม Banner สินค้าลดราคา */}
       <DiscountCarousel items={onSale} />
-
+      {/* Sub Banner */}
+      + <SubBanner />
       {/* ส่วนสินค้าแนะนำ */}
       <h1 className="text-3xl font-bold mb-6">สินค้าแนะนำ</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -29,7 +30,6 @@ export default function HomePage({ featured, onSale }: HomeProps) {
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
-
       {/* ปุ่มดูสินค้าทั้งหมด */}
       <div className="text-center mt-8">
         <Link href="/all-products">

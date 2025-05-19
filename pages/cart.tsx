@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -19,21 +20,49 @@ interface CartItem {
 }
 
 export default function CartPage() {
+  const router = useRouter();
   const { token } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // โหลดข้อมูลตะกร้า
+  const loadCart = async () => {
     if (!token) return;
-    fetch("/api/cart", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setItems(data.items || []);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    setLoading(true);
+    try {
+      const res = await fetch("/api/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setItems(data.items || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ลบรายการจากตะกร้า
+  const removeItem = async (itemId: string) => {
+    if (!token) return;
+    try {
+      await fetch("/api/cart", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ itemId }),
+      });
+      // โหลดข้อมูลใหม่
+      loadCart();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    loadCart();
   }, [token]);
 
   const total = items.reduce((sum, item) => {
@@ -93,11 +122,17 @@ export default function CartPage() {
                     <p className="text-gray-600">ราคาต่อหน่วย: {unit} ฿</p>
                     <p className="text-gray-600">จำนวน: {item.quantity}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right mr-4">
                     <p className="font-semibold">
                       รวม: {unit * item.quantity} ฿
                     </p>
                   </div>
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="text-red-600 hover:text-red-800 ml-4"
+                  >
+                    ลบ
+                  </button>
                 </div>
               );
             })}
@@ -109,7 +144,10 @@ export default function CartPage() {
           </div>
 
           <div className="text-right mt-6">
-            <button className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button
+              onClick={() => router.push("/checkout")}
+              className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
               ดำเนินการชำระเงิน
             </button>
           </div>
