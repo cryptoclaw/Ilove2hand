@@ -120,3 +120,10 @@ model AuditLog {
   performedBy String
   timestamp   DateTime @default(now())
 }
+
+model Faq {
+  id         String   @id @default(uuid())
+  question   String
+  answer     String?  // ถ้ายังไม่มีคำตอบ ให้เป็น null
+  createdAt  DateTime @default(now())
+}

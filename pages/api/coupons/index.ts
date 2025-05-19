@@ -1,4 +1,4 @@
-// pages/api/coupons.ts
+// pages/api/coupons/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
