@@ -2,10 +2,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
+import Image from "next/image";
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
+import type { Product } from "@/types/product";
+import { useRouter } from "next/navigation";
 
 interface CartItem {
   id: string;
@@ -70,16 +73,20 @@ export default function CartPage() {
     return sum + unit * item.quantity;
   }, 0);
 
+  // ถ้ายังไม่ล็อกอิน
   if (!token) {
     return (
       <Layout title="ตะกร้าสินค้า">
-        <p className="text-center py-8">
-          กรุณา{" "}
-          <Link href="/login" className="text-blue-600">
-            Login
-          </Link>{" "}
-          ก่อนดูตะกร้า
-        </p>
+        <div className="py-20 text-center">
+          <ShoppingCart size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="mb-4">
+            กรุณา&nbsp;
+            <Link href="/login" className="text-green-600 hover:underline">
+              Login
+            </Link>
+            &nbsp;ก่อนดูตะกร้า
+          </p>
+        </div>
       </Layout>
     );
   }
@@ -91,48 +98,51 @@ export default function CartPage() {
       {loading ? (
         <p>กำลังโหลด...</p>
       ) : items.length === 0 ? (
-        <p>
-          ตะกร้าว่างเปล่า{" "}
-          <Link href="/all-products" className="text-blue-600">
-            ดูสินค้า
+        <div className="py-20 text-center">
+          <ShoppingCart size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="mb-4">ตะกร้าว่างเปล่า</p>
+          <Link
+            href="/all-products"
+            className="inline-block btn bg-green-600 hover:bg-green-700 text-white"
+          >
+            ดูสินค้าเพิ่มเติม
           </Link>
-        </p>
+        </div>
       ) : (
         <>
-          <div className="space-y-4 mb-6">
+          <div className="space-y-6 mb-8">
             {items.map((item) => {
               const unit = item.product.salePrice ?? item.product.price;
               return (
                 <div
                   key={item.id}
-                  className="flex items-center border p-4 rounded"
+                  className="card flex items-center p-4 shadow-sm hover:shadow-md transition"
                 >
-                  <img
-                    src={item.product.imageUrl || "/images/placeholder.png"}
-                    alt={item.product.name}
-                    className="w-20 h-20 object-cover rounded mr-4"
-                  />
-                  <div className="flex-1">
+                  <div className="w-24 h-24 relative rounded-lg overflow-hidden">
+                    <Image
+                      src={item.product.imageUrl ?? "/images/placeholder.png"}
+                      alt={item.product.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 px-4">
                     <Link
                       href={`/products/${item.product.id}`}
-                      className="text-lg font-medium hover:underline"
+                      className="font-medium text-lg hover:underline"
                     >
                       {item.product.name}
                     </Link>
-                    <p className="text-gray-600">ราคาต่อหน่วย: {unit} ฿</p>
-                    <p className="text-gray-600">จำนวน: {item.quantity}</p>
+                    <p className="text-gray-500 text-sm mt-1">
+                      ราคาต่อหน่วย: ฿{unit}
+                    </p>
+                    <p className="text-gray-700">จำนวน: {item.quantity}</p>
                   </div>
-                  <div className="text-right mr-4">
+                  <div className="text-right">
                     <p className="font-semibold">
-                      รวม: {unit * item.quantity} ฿
+                      รวม: ฿{unit * item.quantity}
                     </p>
                   </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-red-600 hover:text-red-800 ml-4"
-                  >
-                    ลบ
-                  </button>
                 </div>
               );
             })}

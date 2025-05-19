@@ -3,18 +3,25 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const bannerImages = [
-  "/images/banner1.png",
-  "/images/banner2.png",
-  "/images/banner3.jpg",
-];
+export interface BannerSlide {
+  title: string;
+  sub: string;
+  img: string;
+}
 
-export default function Banner() {
+interface BannerProps {
+  slides: BannerSlide[];
+  /** ถ้าเป็นแบนเนอร์ Promotion ให้เปลี่ยนสไตล์หัวเรื่อง */
+  isPromotion?: boolean;
+}
+
+export default function Banner({ slides, isPromotion = false }: BannerProps) {
   const [idx, setIdx] = useState(0);
-  const total = bannerImages.length;
+  const total = slides.length;
 
-  // เลื่อนอัตโนมัติทุก 5 วินาที
+  // auto-slide ทุก 5 วิ
   useEffect(() => {
     const timer = setInterval(() => {
       setIdx((i) => (i + 1) % total);
@@ -26,38 +33,46 @@ export default function Banner() {
   const next = () => setIdx((i) => (i + 1) % total);
 
   return (
-    <div className="relative w-full h-64 md:h-96 overflow-hidden rounded-lg mb-6">
-      {/* รูปปัจจุบัน */}
+    <div className="relative w-full h-64 md:h-96 overflow-hidden rounded-3xl mb-6">
+      {/* รูปพื้นหลัง */}
       <Image
-        src={bannerImages[idx]}
-        alt={`Banner ${idx + 1}`}
+        src={slides[idx].img}
+        alt={slides[idx].title}
         fill
         className="object-cover"
       />
 
-      {/* Prev button */}
+      {/* Overlay กราดิเอนต์ + ข้อความ */}
+      <div className="absolute inset-0 flex items-center py-8 px-20 bg-black/30">
+        <div className="text-white max-w-lg">
+          <p className="uppercase text-sm mb-2">{slides[idx].sub}</p>
+          <h2 className={`font-bold ${isPromotion ? "text-2xl" : "text-3xl"}`}>
+            {slides[idx].title}
+          </h2>
+        </div>
+      </div>
+
+      {/* Prev / Next buttons */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 p-2 rounded-full shadow hover:bg-white"
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white border-2 border-green-200 p-3 rounded-full shadow-lg hover:bg-white transition z-10"
       >
-        ◀
+        <ChevronLeft size={24} className="text-green-600" />
       </button>
-
-      {/* Next button */}
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 p-2 rounded-full shadow hover:bg-white"
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white border-2 border-green-200 p-3 rounded-full shadow-lg hover:bg-white transition z-10"
       >
-        ▶
+        <ChevronRight size={24} className="text-green-600" />
       </button>
 
       {/* Dots indicator */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-        {bannerImages.map((_, i) => (
+        {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => setIdx(i)}
-            className={`w-3 h-3 rounded-full ${
+            className={`w-3 h-3 rounded-full transition-colors ${
               i === idx ? "bg-white" : "bg-white/50"
             }`}
           />

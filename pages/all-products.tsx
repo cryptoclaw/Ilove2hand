@@ -1,5 +1,6 @@
 // pages/all-products.tsx
 import { GetServerSideProps } from "next";
+import { useRouter } from "next/navigation";
 import { useState, ChangeEvent } from "react";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
@@ -9,31 +10,31 @@ import { Product, Category } from "@/types/product";
 interface AllProductsProps {
   products: Product[];
   categories: Category[];
+  selectedCategory: string | null;
 }
 
 export default function AllProductsPage({
   products,
   categories,
+  selectedCategory,
 }: AllProductsProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCat, setSelectedCat] = useState("");
 
-  // อัปเดต search term
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  // อัปเดตหมวดหมู่ที่เลือก
-  const handleCategory = (e: ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCat(e.target.value);
+  const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const cat = e.target.value;
+    const url = cat ? `/all-products?category=${cat}` : `/all-products`;
+    router.push(url);
   };
 
-  // กรองสินค้า by name + category
-  const filtered = products.filter((p) => {
-    const matchesName = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = selectedCat ? p.categoryId === selectedCat : true;
-    return matchesName && matchesCat;
-  });
+  // กรองตาม search term
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Layout title="สินค้าทั้งหมด">
@@ -41,20 +42,17 @@ export default function AllProductsPage({
 
       {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        {/* Search */}
         <input
           type="text"
           value={searchTerm}
           onChange={handleSearch}
           placeholder="ค้นหาสินค้า..."
-          className="flex-1 border rounded p-2 focus:outline-none focus:ring"
+          className="flex-1 border rounded p-2"
         />
-
-        {/* Category filter */}
         <select
-          value={selectedCat}
-          onChange={handleCategory}
-          className="border rounded p-2 focus:outline-none focus:ring"
+          value={selectedCategory ?? ""}
+          onChange={handleCategoryChange}
+          className="border rounded p-2"
         >
           <option value="">-- ทุกหมวดหมู่ --</option>
           {categories.map((c) => (
@@ -65,13 +63,13 @@ export default function AllProductsPage({
         </select>
       </div>
 
-      {/* Products grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {/* Product Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
         {filtered.length > 0 ? (
           filtered.map((p) => <ProductCard key={p.id} product={p} />)
         ) : (
           <p className="col-span-full text-center text-gray-500">
-            ไม่พบสินค้า "{searchTerm}"
+            ไม่พบสินค้าตามเงื่อนไข
           </p>
         )}
       </div>
@@ -79,20 +77,26 @@ export default function AllProductsPage({
   );
 }
 
-export const getServerSideProps: GetServerSideProps<
-  AllProductsProps
-> = async () => {
-  // ดึงสินค้าทั้งหมด
-  const rawProducts = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export const getServerSideProps: GetServerSideProps<AllProductsProps> = async ({
+  query,
+}) => {
+  const selectedCategory =
+    typeof query.category === "string" ? query.category : null;
 
   // ดึงหมวดหมู่ทั้งหมด
   const rawCategories = await prisma.category.findMany({
     orderBy: { name: "asc" },
   });
+  const categories: Category[] = rawCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+  }));
 
-  // แมปข้อมูลให้ตรง type
+  // ดึงสินค้า โดยกรองตาม selectedCategory
+  const rawProducts = await prisma.product.findMany({
+    where: selectedCategory ? { categoryId: selectedCategory } : {},
+    orderBy: { createdAt: "desc" },
+  });
   const products: Product[] = rawProducts.map((p) => ({
     id: p.id,
     name: p.name,
@@ -104,12 +108,11 @@ export const getServerSideProps: GetServerSideProps<
     categoryId: p.categoryId ?? "",
   }));
 
-  const categories: Category[] = rawCategories.map((c) => ({
-    id: c.id,
-    name: c.name,
-  }));
-
   return {
-    props: { products, categories },
+    props: {
+      products,
+      categories,
+      selectedCategory,
+    },
   };
 };

@@ -2,21 +2,28 @@
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-100 text-center py-6 mt-12">
-      <div className="container mx-auto text-sm text-gray-600">
-        <p>© {new Date().getFullYear()} ICN_FREEZE. All rights reserved.</p>
-        <div className="mt-2 space-x-4">
-          <a href="/privacy" className="hover:underline">
-            Privacy Policy
-          </a>
-          <a href="/terms" className="hover:underline">
-            Terms of Service
-          </a>
-          <a href="/contact" className="hover:underline">
-            Contact Us
-          </a>
-        </div>
+    <footer className="bg-green-800 text-white py-8 px-6 mt-12">
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-4">
+        <a href="/faq" className="hover:underline">
+          คำถามที่พบบ่อย
+        </a>
+        <a href="/contact" className="hover:underline">
+          ติดต่อเรา
+        </a>
+        <a href="/privacy" className="hover:underline">
+          ประกาศความเป็นส่วนตัวของลูกค้า
+        </a>
+        <a href="/cookie-policy" className="hover:underline">
+          นโยบายการใช้งานคุกกี้
+        </a>
+        <a href="/terms" className="hover:underline">
+          ข้อกำหนดและเงื่อนไข
+        </a>
       </div>
+      <p className="text-center text-sm mt-6">
+        Copyright © {new Date().getFullYear()} Iconnex Thailand Developer.
+        All Rights Reserved.
+      </p>
     </footer>
   );
 }
