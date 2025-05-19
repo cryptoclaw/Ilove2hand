@@ -1,5 +1,5 @@
 // pages/products/[id].tsx
-"use client"; // ← บรรทัดสำคัญ!
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,14 +20,14 @@ export default function ProductPage({ product }: ProductPageProps) {
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const priceToUse = product.salePrice ?? product.price;
-
   const addToCart = async () => {
+    console.log("token:", token);
     if (!token) {
       router.push("/login");
       return;
     }
     setLoading(true);
+
     const res = await fetch("/api/cart", {
       method: "POST",
       headers: {
@@ -36,12 +36,14 @@ export default function ProductPage({ product }: ProductPageProps) {
       },
       body: JSON.stringify({ productId: product.id, quantity: qty }),
     });
+    const text = await res.text();
+    console.log("API response:", res.status, text);
+
     setLoading(false);
     if (res.ok) {
       alert("เพิ่มลงตะกร้าแล้ว!");
     } else {
-      const err = await res.json();
-      alert("Error: " + err.error);
+      alert("Error: " + text);
     }
   };
 
@@ -74,7 +76,6 @@ export default function ProductPage({ product }: ProductPageProps) {
 
           <p className="mb-4">Stock: {product.stock}</p>
 
-          {/* ตัวเลือกจำนวน */}
           <div className="mb-4">
             <label className="mr-2">จำนวน:</label>
             <input
@@ -87,7 +88,6 @@ export default function ProductPage({ product }: ProductPageProps) {
             />
           </div>
 
-          {/* ปุ่มเพิ่มลงตะกร้า */}
           <button
             onClick={addToCart}
             disabled={loading}
