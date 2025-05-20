@@ -1,4 +1,3 @@
-// components/Banner.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,6 +17,9 @@ interface BannerProps {
 }
 
 export default function Banner({ slides, isPromotion = false }: BannerProps) {
+  // ถ้าไม่มี slides หรือ array ว่าง ไม่ต้องเรนเดอร์อะไร
+  if (!slides || slides.length === 0) return null;
+
   const [idx, setIdx] = useState(0);
   const total = slides.length;
 

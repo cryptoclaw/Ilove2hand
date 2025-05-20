@@ -1,0 +1,352 @@
+// pages/admin/dashboard.tsx
+"use client";
+
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import Layout from "@/components/Layout";
+
+// --- Types ---
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Banner {
+  id: string;
+  title: string;
+  sub: string | null;
+  imageUrl: string;
+  order: number;
+}
+
+// --- Admin Dashboard ---
+export default function AdminDashboard() {
+  const [tab, setTab] = useState<"product" | "category" | "banner">("product");
+
+  return (
+    <Layout title="Admin Dashboard">
+      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+      {/* Tabs */}
+      <div className="flex space-x-2 mb-8">
+        {["product", "category", "banner"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t as any)}
+            className={`px-4 py-2 rounded ${
+              tab === t
+                ? "bg-green-600 text-white"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
+          >
+            {t === "product"
+              ? "สร้างสินค้า"
+              : t === "category"
+              ? "จัดการหมวดหมู่"
+              : "จัดการแบนเนอร์"}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      {tab === "product" && <CreateProductSection />}
+      {tab === "category" && <ManageCategorySection />}
+      {tab === "banner" && <ManageBannerSection />}
+    </Layout>
+  );
+}
+
+// --- Create Product Section ---
+function CreateProductSection() {
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    salePrice: "",
+    stock: "",
+    categoryId: "",
+  });
+  const [file, setFile] = useState<File | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => setCategories(data.items || data))
+      .catch(console.error);
+  }, []);
+
+  const onChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, files } = e.target as any;
+    if (name === "image" && files) setFile(files[0]);
+    else setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    // validation...
+    const data = new FormData();
+    data.append("name", form.name);
+    data.append("description", form.description);
+    data.append("price", form.price);
+    if (form.salePrice) data.append("salePrice", form.salePrice);
+    data.append("stock", form.stock);
+    if (form.categoryId) data.append("categoryId", form.categoryId);
+    if (file) data.append("image", file);
+
+    const res = await fetch("/api/products", { method: "POST", body: data });
+    if (!res.ok) {
+      alert("Error creating product");
+    } else {
+      alert("Created!");
+      setForm({
+        name: "",
+        description: "",
+        price: "",
+        salePrice: "",
+        stock: "",
+        categoryId: "",
+      });
+      setFile(null);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl mb-4">สร้างสินค้าใหม่</h2>
+      <form onSubmit={onSubmit} className="space-y-4 max-w-md">
+        <input
+          name="name"
+          value={form.name}
+          onChange={onChange}
+          placeholder="ชื่อสินค้า"
+          required
+          className="w-full border p-2 rounded"
+        />
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={onChange}
+          placeholder="รายละเอียด"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          name="price"
+          type="number"
+          value={form.price}
+          onChange={onChange}
+          placeholder="ราคา"
+          required
+          className="w-full border p-2 rounded"
+        />
+        <input
+          name="salePrice"
+          type="number"
+          value={form.salePrice}
+          onChange={onChange}
+          placeholder="ราคาลด (ไม่บังคับ)"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          name="stock"
+          type="number"
+          value={form.stock}
+          onChange={onChange}
+          placeholder="จำนวนสต็อก"
+          required
+          className="w-full border p-2 rounded"
+        />
+        <select
+          name="categoryId"
+          value={form.categoryId}
+          onChange={onChange}
+          className="w-full border p-2 rounded"
+        >
+          <option value="">-- เลือกหมวดหมู่ --</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <input
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={onChange}
+          className="w-full border p-2 rounded"
+        />
+        <button
+          type="submit"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          บันทึก
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// --- Manage Category Section ---
+function ManageCategorySection() {
+  const [cats, setCats] = useState<Category[]>([]);
+  const [newName, setNewName] = useState("");
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => setCats(data.items || data))
+      .catch(console.error);
+  }, []);
+
+  const add = async (e: FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    });
+    if (res.ok) {
+      const cat = await res.json();
+      setCats((c) => [...c, cat]);
+      setNewName("");
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("ลบไหม?")) return;
+    const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    if (res.status === 204) setCats((c) => c.filter((x) => x.id !== id));
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl mb-4">จัดการหมวดหมู่</h2>
+      <form onSubmit={add} className="flex gap-2 mb-6">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="ชื่อหมวดหมู่ใหม่"
+          className="border p-2 rounded flex-1"
+        />
+        <button
+          type="submit"
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          เพิ่ม
+        </button>
+      </form>
+      <ul className="space-y-2">
+        {cats.map((c) => (
+          <li
+            key={c.id}
+            className="flex justify-between items-center border p-2 rounded"
+          >
+            {c.name}
+            <button onClick={() => remove(c.id)} className="text-red-600">
+              ลบ
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// --- Manage Banner Section ---
+function ManageBannerSection() {
+  const [items, setItems] = useState<Banner[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [form, setForm] = useState({ title: "", sub: "", order: 0 });
+
+  useEffect(() => {
+    fetch("/api/banners")
+      .then((r) => r.json())
+      .then((data) => setItems(data.items))
+      .catch(console.error);
+  }, []);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!file) return alert("เลือกรูปก่อน");
+    const fd = new FormData();
+    fd.append("title", form.title);
+    fd.append("sub", form.sub);
+    fd.append("order", String(form.order));
+    fd.append("image", file);
+    const res = await fetch("/api/banners", { method: "POST", body: fd });
+    if (res.ok) {
+      const b = await res.json();
+      setItems((i) => [...i, b]);
+      setForm({ title: "", sub: "", order: 0 });
+      setFile(null);
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("ลบแบนเนอร์?")) return;
+    await fetch(`/api/banners/${id}`, { method: "DELETE" });
+    setItems((i) => i.filter((b) => b.id !== id));
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl mb-4">จัดการแบนเนอร์</h2>
+      <form onSubmit={submit} className="space-y-3 mb-6 max-w-md">
+        <input
+          value={form.title}
+          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          placeholder="Title"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          value={form.sub}
+          onChange={(e) => setForm((f) => ({ ...f, sub: e.target.value }))}
+          placeholder="Sub (optional)"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          type="number"
+          value={form.order}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, order: Number(e.target.value) }))
+          }
+          placeholder="Order"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="w-full border p-2 rounded"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          สร้าง
+        </button>
+      </form>
+
+      <ul className="space-y-4">
+        {items.map((b) => (
+          <li key={b.id} className="flex justify-between items-center">
+            <img
+              src={b.imageUrl}
+              alt={b.title}
+              className="w-32 h-16 object-cover rounded"
+            />
+            <span className="ml-4">{b.title}</span>
+            <button
+              onClick={() => remove(b.id)}
+              className="bg-red-500 text-white px-3 py-1 rounded"
+            >
+              ลบ
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
