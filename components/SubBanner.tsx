@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function SubBanner() {
   return (
-    <div className="my-8 p-6 bg-green-50 rounded-xl flex flex-col md:flex-row items-center justify-between">
+    <div className="my-8 p-6 bg-green-200 rounded-xl flex flex-col md:flex-row items-center justify-between">
       <div className="mb-4 md:mb-0">
         <h2 className="text-2xl font-bold">โปรโมชั่นพิเศษ!</h2>
         <p className="mt-2 text-gray-700">

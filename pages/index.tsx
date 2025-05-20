@@ -8,6 +8,7 @@ import DiscountCarousel from "@/components/DiscountCarousel";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 import { Category, Product } from "@/types/product";
+import SubBanner from "@/components/SubBanner";
 
 interface HomeProps {
   banners: BannerSlide[];
@@ -51,7 +52,7 @@ export default function HomePage({
 
       {/* Promotion Banner */}
       <section className="py-8 px-4">
-        <Banner slides={promoSlides} isPromotion />
+        <SubBanner />
       </section>
 
       {/* Featured Products */}
@@ -73,7 +74,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     orderBy: { order: "asc" },
   });
   const banners: BannerSlide[] = rawBanners.map((b) => ({
-    title: b.title,
+    title: b.title ?? "",
     sub: b.sub ?? "",
     img: b.imageUrl,
   }));

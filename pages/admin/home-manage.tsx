@@ -323,12 +323,18 @@ function ManageCategorySection() {
   );
 }
 
-// --- Manage Banner Section ---
-function ManageBannerSection() {
+// --- Manage Banner Section: title/sub optional ---
+
+export function ManageBannerSection() {
   const [items, setItems] = useState<Banner[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ title: "", sub: "", order: 0 });
+  const [form, setForm] = useState<{
+    title: string;
+    sub: string;
+    order: number;
+  }>({ title: "", sub: "", order: 0 });
 
+  // โหลดรายการจาก API
   useEffect(() => {
     fetch("/api/banners")
       .then((r) => r.json())
@@ -336,18 +342,35 @@ function ManageBannerSection() {
       .catch(console.error);
   }, []);
 
-  const submit = async (e: FormEvent) => {
+  // handler เปลี่ยนค่า form
+  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value, files } = e.target as any;
+    if (name === "image" && files) {
+      setFile(files[0]);
+    } else {
+      setForm((f) => ({ ...f, [name]: value }));
+    }
+  };
+
+  // สร้าง banner ใหม่
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!file) return alert("เลือกรูปก่อน");
+    if (!file) return alert("กรุณาเลือกไฟล์รูปก่อน");
+
     const fd = new FormData();
-    fd.append("title", form.title);
-    fd.append("sub", form.sub);
+    // append title/sub ถ้ามี
+    if (form.title.trim()) fd.append("title", form.title.trim());
+    if (form.sub.trim()) fd.append("sub", form.sub.trim());
     fd.append("order", String(form.order));
     fd.append("image", file);
-    const res = await fetch("/api/banners", { method: "POST", body: fd });
+
+    const res = await fetch("/api/banners", {
+      method: "POST",
+      body: fd,
+    });
     if (res.ok) {
-      const b = await res.json();
-      setItems((i) => [...i, b]);
+      const newBanner: Banner = await res.json();
+      setItems((prev) => [...prev, newBanner]);
       setForm({ title: "", sub: "", order: 0 });
       setFile(null);
     } else {
@@ -355,63 +378,77 @@ function ManageBannerSection() {
     }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("ลบแบนเนอร์?")) return;
-    await fetch(`/api/banners/${id}`, { method: "DELETE" });
-    setItems((i) => i.filter((b) => b.id !== id));
+  // ลบ banner
+  const onDelete = async (id: string) => {
+    if (!confirm("ต้องการลบแบนเนอร์นี้หรือไม่?")) return;
+    const res = await fetch(`/api/banners/${id}`, { method: "DELETE" });
+    if (res.status === 204) {
+      setItems((prev) => prev.filter((b) => b.id !== id));
+    } else {
+      alert("Error deleting banner");
+    }
   };
 
   return (
     <div>
       <h2 className="text-2xl mb-4">จัดการแบนเนอร์</h2>
-      <form onSubmit={submit} className="space-y-3 mb-6 max-w-md">
+
+      <form onSubmit={onSubmit} className="space-y-4 mb-6 max-w-md">
         <input
+          name="title"
           value={form.title}
-          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          placeholder="Title"
+          onChange={onChange}
+          placeholder="Title (ไม่บังคับ)"
           className="w-full border p-2 rounded"
         />
         <input
+          name="sub"
           value={form.sub}
-          onChange={(e) => setForm((f) => ({ ...f, sub: e.target.value }))}
-          placeholder="Sub (optional)"
+          onChange={onChange}
+          placeholder="Sub (ไม่บังคับ)"
           className="w-full border p-2 rounded"
         />
         <input
+          name="order"
           type="number"
           value={form.order}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, order: Number(e.target.value) }))
-          }
+          onChange={onChange}
           placeholder="Order"
           className="w-full border p-2 rounded"
         />
         <input
+          name="image"
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={onChange}
           className="w-full border p-2 rounded"
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          สร้าง
+          สร้าง/อัปโหลดแบนเนอร์
         </button>
       </form>
 
       <ul className="space-y-4">
         {items.map((b) => (
-          <li key={b.id} className="flex justify-between items-center">
-            <img
-              src={b.imageUrl}
-              alt={b.title}
-              className="w-32 h-16 object-cover rounded"
-            />
-            <span className="ml-4">{b.title}</span>
+          <li key={b.id} className="flex items-center justify-between">
+            <div className="flex items-center">
+              <img
+                src={b.imageUrl}
+                alt={b.title ?? "Banner image"}
+                className="w-32 h-16 object-cover rounded"
+              />
+              <div className="ml-4">
+                <p>Title: {b.title || "-"}</p>
+                <p>Sub: {b.sub || "-"}</p>
+                <p>Order: {b.order}</p>
+              </div>
+            </div>
             <button
-              onClick={() => remove(b.id)}
-              className="bg-red-500 text-white px-3 py-1 rounded"
+              onClick={() => onDelete(b.id)}
+              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
             >
               ลบ
             </button>

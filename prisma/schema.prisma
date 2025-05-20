@@ -130,7 +130,7 @@ model Faq {
 
 model Banner {
   id        String   @id @default(uuid())
-  title     String
+  title     String?
   sub       String?
   imageUrl  String
   order     Int      @default(0)
