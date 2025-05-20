@@ -23,13 +23,12 @@ export default function Navbar() {
       <div className="container mx-auto px-4 lg:px-8">
         {/* ตั้งความสูง navbar ให้พอเหมาะ (96px) */}
         <div className="flex items-center justify-between h-24">
-          
           {/* 1. Logo */}
           <Link href="/" className="flex items-center">
             <Image
               src="/images/logo.png"
               alt="ICN_FREEZE Logo"
-              width={100}    // ปรับให้ใหญ่ขึ้น
+              width={100} // ปรับให้ใหญ่ขึ้น
               height={100}
             />
           </Link>

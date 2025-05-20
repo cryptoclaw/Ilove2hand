@@ -1,10 +1,11 @@
 // pages/admin/qa.tsx
 
 import { GetServerSideProps } from "next";
-import Layout from "@/components/Layout";
+import Layout from "@/components/AdminLayout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { useState } from "react";
+import { adminGuard } from "@/lib/adminGuard";
 
 interface Faq {
   id: string;
@@ -82,19 +83,24 @@ export default function AdminQaPage({ faqs }: Props) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = async () => {
-  const raw = await prisma.faq.findMany({
-    orderBy: { createdAt: "desc" },
+export const getServerSideProps: GetServerSideProps = async (ctx) =>
+  adminGuard(ctx, async () => {
+    const raw = await prisma.faq.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    const faqs: Faq[] = raw.map((f) => ({
+      id: f.id,
+      question: f.question,
+      answer: f.answer,
+      createdAt: f.createdAt.toISOString(),
+    }));
+
+    return { props: { faqs } };
   });
 
-  const faqs: Faq[] = raw.map((f) => ({
-    id: f.id,
-    question: f.question,
-    answer: f.answer,
-    createdAt: f.createdAt.toISOString(),
-  }));
-
-  return {
-    props: { faqs },
-  };
-};
+// export const getServerSideProps: GetServerSideProps = async (ctx) =>
+//   adminGuard(ctx, async () => {
+//     // ถ้ามีข้อมูลฝั่งเซิร์ฟเวอร์จะ fetch มาใส่ใน props ได้ที่นี่
+//     return { props: {} };
+//   }); ถ้าอยากให้ต้อง login ก่อนเข้า admin

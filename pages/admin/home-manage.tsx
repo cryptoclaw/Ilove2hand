@@ -2,8 +2,10 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import Layout from "@/components/Layout";
-
+import Layout from "@/components/AdminLayout";
+import { GetServerSideProps } from "next";
+import { adminGuard } from "@/lib/adminGuard";
+import { useAuth } from "@/context/AuthContext";
 // --- Types ---
 interface Category {
   id: string;
@@ -27,9 +29,15 @@ interface Product {
 // --- Admin Dashboard ---
 export default function HomeManagePage() {
   const [tab, setTab] = useState<"product" | "category" | "banner">("product");
-
+  const { user } = useAuth();
+  console.log("AuthContext user:", user);
   return (
     <Layout title="Home Manage">
+      {user ? (
+        <p>Welcome, {user.name || user.email || "Admin"}!</p>
+      ) : (
+        <p>Loading user info...</p>
+      )}
       <h1 className="text-3xl font-bold mb-6">Home Manage</h1>
 
       {/* Tabs */}
@@ -66,6 +74,11 @@ export default function HomeManagePage() {
     </Layout>
   );
 }
+export const getServerSideProps: GetServerSideProps = async (ctx) =>
+  adminGuard(ctx, async () => {
+    // ถ้ามีข้อมูลฝั่งเซิร์ฟเวอร์จะ fetch มาใส่ใน props ได้ที่นี่
+    return { props: {} };
+  });
 
 // --- Create Product Section ---
 function CreateProductSection() {

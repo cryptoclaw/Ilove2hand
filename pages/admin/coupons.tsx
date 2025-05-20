@@ -1,9 +1,10 @@
 // pages/admin/coupons.tsx
 import { GetServerSideProps, NextPage } from "next";
 import { useState, FormEvent } from "react";
-import Layout from "@/components/Layout";
+import Layout from "@/components/AdminLayout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { adminGuard } from "@/lib/adminGuard";
 
 interface Coupon {
   id: string;
@@ -176,19 +177,20 @@ const AdminCouponsPage: NextPage<Props> = ({ initial }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async () => {
-  const raw = await prisma.coupon.findMany({
-    /* ... */
-  });
-  const initial: Coupon[] = raw.map((c) => ({
-    id: c.id,
-    code: c.code,
-    discountType: c.discountType as "percent" | "fixed",
-    discountValue: c.discountValue,
-    usageLimit: c.usageLimit,
-    expiresAt: c.expiresAt?.toISOString() ?? null,
-  }));
-  return { props: { initial } };
-};
-
 export default AdminCouponsPage;
+
+export const getServerSideProps: GetServerSideProps = async (ctx) =>
+  adminGuard(ctx, async () => {
+    const raw = await prisma.coupon.findMany({
+      /* ... */
+    });
+    const initial: Coupon[] = raw.map((c) => ({
+      id: c.id,
+      code: c.code,
+      discountType: c.discountType as "percent" | "fixed",
+      discountValue: c.discountValue,
+      usageLimit: c.usageLimit,
+      expiresAt: c.expiresAt?.toISOString() ?? null,
+    }));
+    return { props: { initial } };
+  });
