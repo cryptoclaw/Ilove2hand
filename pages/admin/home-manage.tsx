@@ -1,4 +1,4 @@
-// pages/admin/dashboard.tsx
+// pages/admin/home-manage.tsx
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
@@ -18,37 +18,49 @@ interface Banner {
   order: number;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  // ... คุณอาจไม่จำเป็นต้องใช้ field ทั้งหมดของ Product ที่นี่
+}
+
 // --- Admin Dashboard ---
-export default function AdminDashboard() {
+export default function HomeManagePage() {
   const [tab, setTab] = useState<"product" | "category" | "banner">("product");
 
   return (
-    <Layout title="Admin Dashboard">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+    <Layout title="Home Manage">
+      <h1 className="text-3xl font-bold mb-6">Home Manage</h1>
 
       {/* Tabs */}
       <div className="flex space-x-2 mb-8">
-        {["product", "category", "banner"].map((t) => (
+        {[
+          { key: "product", label: "สร้างสินค้า" },
+          { key: "category", label: "จัดการหมวดหมู่" },
+          { key: "banner", label: "จัดการแบนเนอร์" },
+        ].map(({ key, label }) => (
           <button
-            key={t}
-            onClick={() => setTab(t as any)}
+            key={key}
+            onClick={() => setTab(key as any)}
             className={`px-4 py-2 rounded ${
-              tab === t
+              tab === key
                 ? "bg-green-600 text-white"
                 : "bg-gray-200 hover:bg-gray-300"
             }`}
           >
-            {t === "product"
-              ? "สร้างสินค้า"
-              : t === "category"
-              ? "จัดการหมวดหมู่"
-              : "จัดการแบนเนอร์"}
+            {label}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      {tab === "product" && <CreateProductSection />}
+      {tab === "product" && (
+        <>
+          <CreateProductSection />
+          <hr className="my-6" />
+          <ManageProductSection />
+        </>
+      )}
       {tab === "category" && <ManageCategorySection />}
       {tab === "banner" && <ManageBannerSection />}
     </Layout>
@@ -85,7 +97,6 @@ function CreateProductSection() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // validation...
     const data = new FormData();
     data.append("name", form.name);
     data.append("description", form.description);
@@ -187,6 +198,63 @@ function CreateProductSection() {
     </div>
   );
 }
+// ในไฟล์ pages/admin/dashboard.tsx (ต่อจาก CreateProductSection)
+
+function ManageProductSection() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // โหลดสินค้าทั้งหมด
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data) => {
+        setProducts(data.items || data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ลบสินค้า
+  const remove = async (id: string) => {
+    if (!confirm("ลบสินค้านี้หรือไม่?")) return;
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (res.status === 204) {
+      setProducts((p) => p.filter((x) => x.id !== id));
+    } else {
+      const err = await res.json();
+      alert("Error: " + (err.error || "ไม่สามารถลบได้"));
+    }
+  };
+
+  if (loading) return <p>กำลังโหลดสินค้า...</p>;
+
+  return (
+    <div>
+      <h2 className="text-2xl mb-4">จัดการสินค้า</h2>
+      {products.length === 0 ? (
+        <p>ยังไม่มีสินค้า</p>
+      ) : (
+        <ul className="space-y-4">
+          {products.map((p) => (
+            <li
+              key={p.id}
+              className="flex justify-between items-center border p-3 rounded"
+            >
+              <span>{p.name}</span>
+              <button
+                onClick={() => remove(p.id)}
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+              >
+                ลบ
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // --- Manage Category Section ---
 function ManageCategorySection() {
@@ -202,6 +270,7 @@ function ManageCategorySection() {
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
+    if (!newName.trim()) return alert("กรุณากรอกชื่อหมวดหมู่");
     const res = await fetch("/api/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -281,6 +350,8 @@ function ManageBannerSection() {
       setItems((i) => [...i, b]);
       setForm({ title: "", sub: "", order: 0 });
       setFile(null);
+    } else {
+      alert("Error creating banner");
     }
   };
 

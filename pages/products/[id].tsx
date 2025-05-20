@@ -1,9 +1,7 @@
 // pages/products/[id].tsx
-"use client";
-
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { GetServerSideProps } from "next";
+import { useRouter } from "next/router"; // เปลี่ยน import
+import type { GetServerSideProps } from "next"; // ประกาศ type-only import
 import Layout from "@/components/Layout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -22,12 +20,10 @@ export default function ProductPage({ product }: ProductPageProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-<<<<<<< HEAD
-=======
-  // รีเซ็ต error ทุกครั้งที่ qty หรือ stock เปลี่ยน
+  // ตรวจสอบ qty ให้ไม่เกิน stock
   useEffect(() => {
     if (qty < 1) setQty(1);
-    if (qty > product.stock) {
+    else if (qty > product.stock) {
       setQty(product.stock);
       setError(`สั่งได้สูงสุด ${product.stock} ชิ้น`);
     } else {
@@ -35,34 +31,13 @@ export default function ProductPage({ product }: ProductPageProps) {
     }
   }, [qty, product.stock]);
 
->>>>>>> origin/Mart-front
   const addToCart = async () => {
-    console.log("token:", token);
     if (!token) {
       router.push("/login");
       return;
     }
-    if (error) return; // ถ้ามี error หยุด
+    if (error) return;
     setLoading(true);
-
-<<<<<<< HEAD
-    const res = await fetch("/api/cart", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId: product.id, quantity: qty }),
-    });
-    const text = await res.text();
-    console.log("API response:", res.status, text);
-
-    setLoading(false);
-    if (res.ok) {
-      alert("เพิ่มลงตะกร้าแล้ว!");
-    } else {
-      alert("Error: " + text);
-=======
     try {
       const res = await fetch("/api/cart", {
         method: "POST",
@@ -76,57 +51,16 @@ export default function ProductPage({ product }: ProductPageProps) {
         const text = await res.text();
         throw new Error(text || "เพิ่มลงตะกร้าไม่สำเร็จ");
       }
-      // ไปหน้าตะกร้า
       router.push("/cart");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "เกิดข้อผิดพลาด ลองใหม่อีกครั้ง");
     } finally {
       setLoading(false);
->>>>>>> origin/Mart-front
     }
   };
 
   return (
-<<<<<<< HEAD
-    <Layout>
-      <div className="flex flex-col md:flex-row gap-6">
-        <img
-          src={product.imageUrl || "/images/placeholder.png"}
-          alt={product.name}
-          className="w-full md:w-1/2 h-auto object-cover rounded"
-        />
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-          <p className="text-gray-600 mb-4">{product.description}</p>
-
-          {product.salePrice != null ? (
-            <div className="mb-4">
-              <span className="text-2xl text-red-600 font-bold mr-2">
-                {product.salePrice} ฿
-              </span>
-              <span className="text-xl text-gray-500 line-through">
-                {product.price} ฿
-              </span>
-            </div>
-          ) : (
-            <p className="text-xl text-green-700 mb-4">
-              Price: {product.price} ฿
-            </p>
-          )}
-
-          <p className="mb-4">Stock: {product.stock}</p>
-
-          <div className="mb-4">
-            <label className="mr-2">จำนวน:</label>
-            <input
-              type="number"
-              min={1}
-              max={product.stock}
-              value={qty}
-              onChange={(e) => setQty(Number(e.target.value))}
-              className="w-16 border p-1 text-center"
-=======
     <Layout title={product.name}>
       <div className="max-w-4xl mx-auto p-4 bg-white rounded-lg shadow">
         <div className="flex flex-col md:flex-row gap-6">
@@ -135,22 +69,12 @@ export default function ProductPage({ product }: ProductPageProps) {
               src={product.imageUrl || "/images/placeholder.png"}
               alt={product.name}
               className="w-full h-auto object-cover rounded"
->>>>>>> origin/Mart-front
             />
           </div>
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
             <p className="text-gray-600 mb-4">{product.description}</p>
 
-<<<<<<< HEAD
-          <button
-            onClick={addToCart}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded disabled:opacity-50"
-          >
-            {loading ? "กำลังเพิ่ม..." : "เพิ่มลงในตะกร้า"}
-          </button>
-=======
             {product.salePrice != null ? (
               <div className="mb-4">
                 <span className="text-2xl text-red-600 font-bold mr-2">
@@ -161,11 +85,8 @@ export default function ProductPage({ product }: ProductPageProps) {
                 </span>
               </div>
             ) : (
-              <p className="text-xl text-green-700 mb-4">
-                ฿{product.price}
-              </p>
+              <p className="text-xl text-green-700 mb-4">฿{product.price}</p>
             )}
->>>>>>> origin/Mart-front
 
             <p className="mb-4">Stock: {product.stock}</p>
 
@@ -179,9 +100,7 @@ export default function ProductPage({ product }: ProductPageProps) {
                 onChange={(e) => setQty(Number(e.target.value))}
                 className="w-20 border rounded px-2 py-1 text-center"
               />
-              {error && (
-                <p className="text-red-500 text-sm mt-1">{error}</p>
-              )}
+              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>
 
             <button
@@ -211,7 +130,9 @@ export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({
 }) => {
   const id = params?.id as string;
   const p = await prisma.product.findUnique({ where: { id } });
-  if (!p) return { notFound: true };
+  if (!p) {
+    return { notFound: true };
+  }
 
   const product: ProductType & { createdAt: string; updatedAt: string } = {
     id: p.id,
@@ -225,5 +146,7 @@ export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({
     updatedAt: p.updatedAt.toISOString(),
   };
 
-  return { props: { product } };
+  return {
+    props: { product },
+  };
 };
