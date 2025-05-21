@@ -71,14 +71,17 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-center space-x-2 mb-2">
           {product.salePrice != null ? (
             <>
+              {/* ราคาปกติขีดฆ่า */}
               <span className="text-gray-400 line-through">
                 ฿{product.price}
               </span>
-              <span className="text-green-600 font-bold">
+              {/* ราคาลดแสดงสีแดง */}
+              <span className="text-red-600 font-bold">
                 ฿{product.salePrice}
               </span>
             </>
           ) : (
+            /* ถ้าไม่มีลด แสดงสีเขียว */
             <span className="text-green-600 font-bold">฿{product.price}</span>
           )}
         </div>
