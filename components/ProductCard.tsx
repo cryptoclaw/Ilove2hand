@@ -1,4 +1,3 @@
-// components/ProductCard.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
-  product: Product;
+  product: Product & { stock: number }; // สมมติ product มี stock ด้วย
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -24,8 +23,30 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
     setAdding(true);
+
     try {
-      const res = await fetch("/api/cart", {
+      // 1. เช็คจำนวนสินค้าที่อยู่ในตะกร้าก่อน
+      const cartRes = await fetch("/api/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!cartRes.ok) throw new Error("Cannot fetch cart");
+
+      const cartData = await cartRes.json();
+      const cartItems: { productId: string; quantity: number }[] = cartData.items || [];
+
+      // 2. หา quantity ที่มีในตะกร้า
+      const itemInCart = cartItems.find((item) => item.productId === product.id);
+      const currentQuantity = itemInCart?.quantity ?? 0;
+
+      // 3. เช็คจำนวน ถ้าเกิน stock หยุด
+      if (currentQuantity + 1 > product.stock) {
+        alert("จำนวนสินค้าเกินสต็อกที่มี");
+        setAdding(false);
+        return;
+      }
+
+      // 4. ถ้าไม่เกิน ก็เพิ่มสินค้าในตะกร้า
+      const addRes = await fetch("/api/cart", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,10 +54,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         },
         body: JSON.stringify({ productId: product.id, quantity: 1 }),
       });
-      if (!res.ok) throw new Error("Failed to add to cart");
+
+      if (!addRes.ok) throw new Error("Failed to add to cart");
+
       router.push("/cart");
     } catch (err) {
       console.error(err);
+      alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
     } finally {
       setAdding(false);
     }
@@ -44,7 +68,6 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="w-full max-w-[200px] bg-white border rounded-2xl p-3 flex flex-col text-center shadow-sm hover:shadow-lg transition">
-      {/* รูปสินค้า: สี่เหลี่ยมจัตุรัส */}
       <Link href={`/products/${product.id}`} className="group block">
         <div className="relative w-full pt-[100%] rounded-lg overflow-hidden mb-3">
           <Image
@@ -54,40 +77,24 @@ export default function ProductCard({ product }: ProductCardProps) {
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
-
-        {/* ชื่อสินค้า */}
         <h3 className="text-black font-semibold text-lg mb-1 group-hover:text-green-600 transition-colors">
           {product.name}
         </h3>
-
-        {/* คำอธิบายสั้น */}
         {product.description && (
-          <p className="text-gray-500 text-xs mb-2 line-clamp-2">
-            {product.description}
-          </p>
+          <p className="text-gray-500 text-xs mb-2 line-clamp-2">{product.description}</p>
         )}
-
-        {/* ราคา */}
         <div className="flex items-center justify-center space-x-2 mb-2">
           {product.salePrice != null ? (
             <>
-              {/* ราคาปกติขีดฆ่า */}
-              <span className="text-gray-400 line-through">
-                ฿{product.price}
-              </span>
-              {/* ราคาลดแสดงสีแดง */}
-              <span className="text-red-600 font-bold">
-                ฿{product.salePrice}
-              </span>
+              <span className="text-gray-400 line-through">฿{product.price}</span>
+              <span className="text-red-600 font-bold">฿{product.salePrice}</span>
             </>
           ) : (
-            /* ถ้าไม่มีลด แสดงสีเขียว */
             <span className="text-green-600 font-bold">฿{product.price}</span>
           )}
         </div>
       </Link>
 
-      {/* ปุ่มหยิบใส่รถเข็น */}
       <button
         onClick={handleAddToCart}
         disabled={adding}

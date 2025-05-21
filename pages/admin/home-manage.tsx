@@ -1,12 +1,10 @@
-// pages/admin/home-manage.tsx
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import Layout from "@/components/AdminLayout";
-import { GetServerSideProps } from "next";
-import { adminGuard } from "@/lib/adminGuard";
+import Layout from "@/components/AdminLayout"; // ใช้ layout ที่คุณมี
 import { useAuth } from "@/context/AuthContext";
-// --- Types ---
+import { useRouter } from "next/navigation";
+
 interface Category {
   id: string;
   name: string;
@@ -23,65 +21,71 @@ interface Banner {
 interface Product {
   id: string;
   name: string;
-  // ... คุณอาจไม่จำเป็นต้องใช้ field ทั้งหมดของ Product ที่นี่
 }
 
-// --- Admin Dashboard ---
 export default function HomeManagePage() {
-  const [tab, setTab] = useState<"product" | "category" | "banner">("product");
-  const { user } = useAuth();
-  console.log("AuthContext user:", user);
+  const [tab, setTab] = useState<"product" | "category" | "banner">("banner");
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
   return (
-    <Layout title="Home Manage">
-      {user ? (
-        <p>Welcome, {user.name || user.email || "Admin"}!</p>
-      ) : (
-        <p>Loading user info...</p>
-      )}
-      <h1 className="text-3xl font-bold mb-6">Home Manage</h1>
+    <Layout title="จัดการหน้าโฮม">
+      {/* Header */}
+      <h1 className="text-3xl font-bold mb-8 border-b border-gray-300 pb-4">
+        จัดการหน้าโฮม
+      </h1>
 
       {/* Tabs */}
-      <div className="flex space-x-2 mb-8">
-        {[
-          { key: "product", label: "สร้างสินค้า" },
-          { key: "category", label: "จัดการหมวดหมู่" },
-          { key: "banner", label: "จัดการแบนเนอร์" },
-        ].map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key as any)}
-            className={`px-4 py-2 rounded ${
-              tab === key
-                ? "bg-green-600 text-white"
-                : "bg-gray-200 hover:bg-gray-300"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-6">
+        <nav className="flex space-x-4">
+          {[
+            { key: "product", label: "สร้างสินค้า" },
+            { key: "category", label: "จัดการหมวดหมู่" },
+            { key: "banner", label: "จัดการแบนเนอร์" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key as any)}
+              className={`px-5 py-2 rounded-md font-medium ${
+                tab === key
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Add button (เหมือนในรูปแบนเนอร์ มีปุ่ม Add) */}
+        
       </div>
 
-      {/* Content */}
-      {tab === "product" && (
-        <>
-          <CreateProductSection />
-          <hr className="my-6" />
-          <ManageProductSection />
-        </>
-      )}
-      {tab === "category" && <ManageCategorySection />}
-      {tab === "banner" && <ManageBannerSection />}
+      {/* Content Section */}
+      <div className="bg-white rounded-lg shadow p-8 max-w-full overflow-x-auto">
+        {tab === "product" && (
+          <>
+            <CreateProductSection />
+            <hr className="my-8 border-gray-200" />
+            <ManageProductSection />
+          </>
+        )}
+        {tab === "category" && <ManageCategorySection />}
+        {tab === "banner" && <ManageBannerSection />}
+      </div>
+
+      {/* Footer / User info */}
+      
     </Layout>
   );
 }
-export const getServerSideProps: GetServerSideProps = async (ctx) =>
-  adminGuard(ctx, async () => {
-    // ถ้ามีข้อมูลฝั่งเซิร์ฟเวอร์จะ fetch มาใส่ใน props ได้ที่นี่
-    return { props: {} };
-  });
 
 // --- Create Product Section ---
 function CreateProductSection() {
+  // โค้ดยังคงเหมือนเดิม
+  // ใส่ max width และ spacing ให้ดูดีตามดีไซน์
+  // ... ใช้โค้ดเดิมของคุณ
+  // เพิ่ม div ห่อ form ด้วย className="max-w-xl"
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -137,23 +141,23 @@ function CreateProductSection() {
   };
 
   return (
-    <div>
-      <h2 className="text-2xl mb-4">สร้างสินค้าใหม่</h2>
-      <form onSubmit={onSubmit} className="space-y-4 max-w-md">
+    <div className="max-w-xl">
+      <h2 className="text-2xl font-semibold mb-6">สร้างสินค้าใหม่</h2>
+      <form onSubmit={onSubmit} className="space-y-5">
         <input
           name="name"
           value={form.name}
           onChange={onChange}
           placeholder="ชื่อสินค้า"
           required
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <textarea
           name="description"
           value={form.description}
           onChange={onChange}
           placeholder="รายละเอียด"
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <input
           name="price"
@@ -162,7 +166,7 @@ function CreateProductSection() {
           onChange={onChange}
           placeholder="ราคา"
           required
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <input
           name="salePrice"
@@ -170,7 +174,7 @@ function CreateProductSection() {
           value={form.salePrice}
           onChange={onChange}
           placeholder="ราคาลด (ไม่บังคับ)"
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <input
           name="stock"
@@ -179,13 +183,13 @@ function CreateProductSection() {
           onChange={onChange}
           placeholder="จำนวนสต็อก"
           required
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <select
           name="categoryId"
           value={form.categoryId}
           onChange={onChange}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         >
           <option value="">-- เลือกหมวดหมู่ --</option>
           {categories.map((c) => (
@@ -199,11 +203,11 @@ function CreateProductSection() {
           type="file"
           accept="image/*"
           onChange={onChange}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <button
           type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          className="bg-green-600 text-white rounded px-5 py-3 hover:bg-green-700 transition"
         >
           บันทึก
         </button>
@@ -211,24 +215,20 @@ function CreateProductSection() {
     </div>
   );
 }
-// ในไฟล์ pages/admin/dashboard.tsx (ต่อจาก CreateProductSection)
 
+// --- Manage Product Section ---
 function ManageProductSection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // โหลดสินค้าทั้งหมด
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
-      .then((data) => {
-        setProducts(data.items || data);
-      })
+      .then((data) => setProducts(data.items || data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  // ลบสินค้า
   const remove = async (id: string) => {
     if (!confirm("ลบสินค้านี้หรือไม่?")) return;
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
@@ -243,21 +243,21 @@ function ManageProductSection() {
   if (loading) return <p>กำลังโหลดสินค้า...</p>;
 
   return (
-    <div>
-      <h2 className="text-2xl mb-4">จัดการสินค้า</h2>
+    <div className="max-w-xl">
+      <h2 className="text-2xl font-semibold mb-6">จัดการสินค้า</h2>
       {products.length === 0 ? (
         <p>ยังไม่มีสินค้า</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-3">
           {products.map((p) => (
             <li
               key={p.id}
-              className="flex justify-between items-center border p-3 rounded"
+              className="flex justify-between items-center p-3 border rounded"
             >
               <span>{p.name}</span>
               <button
                 onClick={() => remove(p.id)}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700"
               >
                 ลบ
               </button>
@@ -303,30 +303,33 @@ function ManageCategorySection() {
   };
 
   return (
-    <div>
-      <h2 className="text-2xl mb-4">จัดการหมวดหมู่</h2>
-      <form onSubmit={add} className="flex gap-2 mb-6">
+    <div className="max-w-xl">
+      <h2 className="text-2xl font-semibold mb-6">จัดการหมวดหมู่</h2>
+      <form onSubmit={add} className="flex gap-3 mb-6">
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="ชื่อหมวดหมู่ใหม่"
-          className="border p-2 rounded flex-1"
+          className="border p-3 rounded flex-1"
         />
         <button
           type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="bg-green-600 text-white rounded px-6 py-3 hover:bg-green-700"
         >
           เพิ่ม
         </button>
       </form>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {cats.map((c) => (
           <li
             key={c.id}
-            className="flex justify-between items-center border p-2 rounded"
+            className="flex justify-between items-center p-3 border rounded"
           >
             {c.name}
-            <button onClick={() => remove(c.id)} className="text-red-600">
+            <button
+              onClick={() => remove(c.id)}
+              className="text-red-600 hover:underline"
+            >
               ลบ
             </button>
           </li>
@@ -336,8 +339,7 @@ function ManageCategorySection() {
   );
 }
 
-// --- Manage Banner Section: title/sub optional ---
-
+// --- Manage Banner Section ---
 export function ManageBannerSection() {
   const [items, setItems] = useState<Banner[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -347,7 +349,6 @@ export function ManageBannerSection() {
     order: number;
   }>({ title: "", sub: "", order: 0 });
 
-  // โหลดรายการจาก API
   useEffect(() => {
     fetch("/api/banners")
       .then((r) => r.json())
@@ -355,7 +356,6 @@ export function ManageBannerSection() {
       .catch(console.error);
   }, []);
 
-  // handler เปลี่ยนค่า form
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) {
@@ -365,13 +365,11 @@ export function ManageBannerSection() {
     }
   };
 
-  // สร้าง banner ใหม่
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file) return alert("กรุณาเลือกไฟล์รูปก่อน");
 
     const fd = new FormData();
-    // append title/sub ถ้ามี
     if (form.title.trim()) fd.append("title", form.title.trim());
     if (form.sub.trim()) fd.append("sub", form.sub.trim());
     fd.append("order", String(form.order));
@@ -391,7 +389,6 @@ export function ManageBannerSection() {
     }
   };
 
-  // ลบ banner
   const onDelete = async (id: string) => {
     if (!confirm("ต้องการลบแบนเนอร์นี้หรือไม่?")) return;
     const res = await fetch(`/api/banners/${id}`, { method: "DELETE" });
@@ -404,22 +401,22 @@ export function ManageBannerSection() {
 
   return (
     <div>
-      <h2 className="text-2xl mb-4">จัดการแบนเนอร์</h2>
+      <h2 className="text-2xl font-semibold mb-4">จัดการแบนเนอร์</h2>
 
-      <form onSubmit={onSubmit} className="space-y-4 mb-6 max-w-md">
+      <form onSubmit={onSubmit} className="space-y-5 mb-6 max-w-xl">
         <input
           name="title"
           value={form.title}
           onChange={onChange}
           placeholder="Title (ไม่บังคับ)"
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <input
           name="sub"
           value={form.sub}
           onChange={onChange}
           placeholder="Sub (ไม่บังคับ)"
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <input
           name="order"
@@ -427,47 +424,57 @@ export function ManageBannerSection() {
           value={form.order}
           onChange={onChange}
           placeholder="Order"
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <input
           name="image"
           type="file"
           accept="image/*"
           onChange={onChange}
-          className="w-full border p-2 rounded"
+          className="w-full border rounded p-3"
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-green-600 text-white rounded px-6 py-3 hover:bg-green-700 transition"
         >
           สร้าง/อัปโหลดแบนเนอร์
         </button>
       </form>
 
-      <ul className="space-y-4">
-        {items.map((b) => (
-          <li key={b.id} className="flex items-center justify-between">
-            <div className="flex items-center">
-              <img
-                src={b.imageUrl}
-                alt={b.title ?? "Banner image"}
-                className="w-32 h-16 object-cover rounded"
-              />
-              <div className="ml-4">
-                <p>Title: {b.title || "-"}</p>
-                <p>Sub: {b.sub || "-"}</p>
-                <p>Order: {b.order}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => onDelete(b.id)}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-            >
-              ลบ
-            </button>
-          </li>
-        ))}
-      </ul>
+      <table className="w-full table-auto border-collapse border border-gray-200 bg-white rounded shadow-md">
+        <thead>
+          <tr className="bg-gray-100 text-left">
+            <th className="border border-gray-300 px-4 py-3 w-12">#</th>
+            <th className="border border-gray-300 px-4 py-3">Name</th>
+            <th className="border border-gray-300 px-4 py-3">Banner</th>
+            <th className="border border-gray-300 px-4 py-3 w-40">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((b, i) => (
+            <tr key={b.id} className="border border-gray-300">
+              <td className="border border-gray-300 px-4 py-4">{(i + 1).toString().padStart(2, "0")}</td>
+              <td className="border border-gray-300 px-4 py-4 font-semibold">{b.title || "-"}</td>
+              <td className="border border-gray-300 px-4 py-2">
+                <img
+                  src={b.imageUrl}
+                  alt={b.title || "Banner image"}
+                  className="h-16 rounded object-cover"
+                />
+              </td>
+              <td className="border border-gray-300 px-4 py-4 space-x-4 text-center">
+                <button className="text-blue-600 hover:underline">แก้ไข</button>
+                <button
+                  onClick={() => onDelete(b.id)}
+                  className="bg-red-600 px-3 py-1 rounded text-white hover:bg-red-700"
+                >
+                  ลบ
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

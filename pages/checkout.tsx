@@ -15,6 +15,7 @@ interface CartItem {
     price: number;
     salePrice?: number | null;
     imageUrl?: string | null;
+    stock: number; // เพิ่ม stock เข้ามาใน type
   };
 }
 
@@ -53,6 +54,36 @@ export default function CheckoutPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token, router]);
+
+  // ฟังก์ชันอัพเดตจำนวนสินค้าในตะกร้า
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    if (newQuantity < 1) {
+      alert("จำนวนต้องไม่น้อยกว่า 1");
+      return;
+    }
+    if (newQuantity > item.product.stock) {
+      alert(`จำนวนเกิน stock ที่มี (สูงสุด ${item.product.stock})`);
+      return;
+    }
+
+    // อัพเดตจำนวนใน state
+    setItems((prev) =>
+      prev.map((i) => (i.id === itemId ? { ...i, quantity: newQuantity } : i))
+    );
+
+    // เรียก API อัพเดตจำนวนในตะกร้าบน server
+    await fetch(`/api/cart/${itemId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ quantity: newQuantity }),
+    });
+  };
 
   const subtotal = items.reduce((sum, item) => {
     const unit = item.product.salePrice ?? item.product.price;
@@ -118,7 +149,6 @@ export default function CheckoutPage() {
       });
 
       if (res.ok) {
-        // ไปหน้า success เมื่อสั่งซื้อสำเร็จ
         router.push("/success");
       } else {
         const err = await res.json();
@@ -148,16 +178,29 @@ export default function CheckoutPage() {
         {items.map((item) => {
           const unit = item.product.salePrice ?? item.product.price;
           return (
-            <div key={item.id} className="flex items-center border p-4 rounded">
+            <div
+              key={item.id}
+              className="flex items-center border p-4 rounded space-x-4"
+            >
               <img
                 src={item.product.imageUrl || "/images/placeholder.png"}
                 alt={item.product.name}
-                className="w-16 h-16 object-cover rounded mr-4"
+                className="w-16 h-16 object-cover rounded"
               />
               <div className="flex-1">
                 <p className="font-medium">{item.product.name}</p>
                 <p className="text-gray-600">
-                  {unit} ฿ × {item.quantity}
+                  {unit} ฿ ×{" "}
+                  <input
+                    type="number"
+                    min={1}
+                    max={item.product.stock}
+                    value={item.quantity}
+                    onChange={(e) =>
+                      updateQuantity(item.id, parseInt(e.target.value) || 1)
+                    }
+                    className="w-16 border rounded p-1 text-center"
+                  />
                 </p>
               </div>
               <div className="font-semibold">{unit * item.quantity} ฿</div>
