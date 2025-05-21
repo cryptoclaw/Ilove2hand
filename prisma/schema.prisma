@@ -70,15 +70,25 @@ model Order {
   id            String      @id @default(uuid())
   user          User        @relation(fields: [userId], references: [id])
   userId        String
+  recipient     String
+  line1         String
+  line2         String?
+  city          String
+  postalCode    String?
+  country       String
   status        String      @default("PENDING")
   totalAmount   Float
   paymentMethod String?
+  slipUrl       String?     // เพิ่มตรงนี้เพื่อเก็บลิงก์สลิป
   items         OrderItem[]
   coupon        Coupon?     @relation(fields: [couponId], references: [id])
   couponId      String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
+
+
+
 
 model OrderItem {
   id              String   @id @default(uuid())
