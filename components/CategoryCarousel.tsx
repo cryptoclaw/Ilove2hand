@@ -21,24 +21,31 @@ export default function CategoryCarousel({
   };
 
   return (
-    <div className="relative py-4">
+    <div className="relative py-3 bg-green-50">
       {/* ปุ่มเลื่อนซ้าย */}
       <button
         onClick={() => scroll(-200)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow z-10"
+        className="absolute left-1 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:shadow-lg transition-shadow z-10"
+        aria-label="Scroll categories left"
       >
         <ChevronLeft size={20} className="text-gray-700" />
       </button>
 
       {/* แถบเลื่อนหมวดหมู่ */}
-      <div ref={containerRef} className="flex space-x-4 overflow-x-auto px-10">
+      <div
+        ref={containerRef}
+        className="flex space-x-3 overflow-x-auto px-8 scrollbar-hide"
+        style={{ paddingBottom: 8 }} // กันไม่ให้ตกขอบล่าง
+      >
         {categories.map((cat) => (
           <Link
             key={cat.id}
             href={`/all-products?category=${cat.id}`}
-            className="flex-shrink-0 bg-white rounded-lg shadow px-4 py-2 hover:bg-green-50 transition"
+            className="flex-shrink-0 bg-white rounded-lg shadow-sm px-5 py-2 hover:bg-green-100 transition-colors select-none cursor-pointer"
           >
-            <span className="text-sm text-gray-700">{cat.name}</span>
+            <span className="text-sm font-medium text-gray-800 whitespace-nowrap">
+              {cat.name}
+            </span>
           </Link>
         ))}
       </div>
@@ -46,7 +53,8 @@ export default function CategoryCarousel({
       {/* ปุ่มเลื่อนขวา */}
       <button
         onClick={() => scroll(200)}
-        className="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow z-10"
+        className="absolute right-1 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:shadow-lg transition-shadow z-10"
+        aria-label="Scroll categories right"
       >
         <ChevronRight size={20} className="text-gray-700" />
       </button>

@@ -1,4 +1,3 @@
-// pages/checkout.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -97,32 +96,38 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append("recipient", address.recipient);
-    formData.append("line1", address.line1);
-    formData.append("line2", address.line2);
-    formData.append("city", address.city);
-    formData.append("postalCode", address.postalCode);
-    formData.append("country", address.country);
-    formData.append("paymentMethod", paymentMethod);
-    formData.append("couponCode", couponCode.trim());
-    if (paymentMethod === "bank_transfer" && slipFile) {
-      formData.append("slip", slipFile);
-    }
+    try {
+      const formData = new FormData();
+      formData.append("recipient", address.recipient);
+      formData.append("line1", address.line1);
+      formData.append("line2", address.line2);
+      formData.append("city", address.city);
+      formData.append("postalCode", address.postalCode);
+      formData.append("country", address.country);
+      formData.append("paymentMethod", paymentMethod);
+      formData.append("couponCode", couponCode.trim());
 
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    setLoading(false);
+      if (paymentMethod === "bank_transfer" && slipFile) {
+        formData.append("slip", slipFile);
+      }
 
-    if (res.ok) {
-      const order = await res.json();
-      router.push(`/orders/${order.id}`);
-    } else {
-      const err = await res.json();
-      alert("Error: " + err.error);
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        // ไปหน้า success เมื่อสั่งซื้อสำเร็จ
+        router.push("/success");
+      } else {
+        const err = await res.json();
+        alert("Error: " + err.error);
+      }
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการสั่งซื้อ");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -252,16 +257,23 @@ export default function CheckoutPage() {
         </select>
       </div>
 
-      {/* สลิปโอนเงิน */}
+      {/* แสดง QR Code และช่องอัปโหลดสลิปเมื่อเลือกโอนผ่านธนาคาร */}
       {paymentMethod === "bank_transfer" && (
         <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-1">อัปโหลดสลิปการโอน</h2>
+          <h2 className="text-lg font-semibold mb-2">อัปโหลดสลิปการโอน</h2>
           <input
             type="file"
             accept="image/*"
             onChange={(e) => setSlipFile(e.target.files?.[0] || null)}
-            className="border p-2 rounded w-full"
+            className="border p-2 rounded w-full mb-4"
           />
+          <div className="flex justify-center">
+            <img
+              src="/images/1.png"
+              alt="QR Code ธนาคาร"
+              className="w-56 h-56 object-contain"
+            />
+          </div>
         </div>
       )}
 

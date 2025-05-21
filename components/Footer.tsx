@@ -3,7 +3,7 @@
 export default function Footer() {
   return (
     <footer className="bg-green-800 text-white py-8 px-6 mt-12">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
         <a href="/qa" className="hover:underline">
           คำถามที่พบบ่อย
         </a>
