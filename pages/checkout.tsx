@@ -412,13 +412,41 @@ export default function CheckoutPage() {
               type="button"
               onClick={async () => {
                 setLoading(true);
-                // Implement COD order creation similar to bank transfer
+                // เรียกสร้าง order แบบเดียวกับ bank transfer แต่ paymentMethod จะเป็น "cod"
+                const res = await (async () => {
+                  const orderItems = items.map((item) => ({
+                    productId: item.product.id,
+                    quantity: item.quantity,
+                    priceAtPurchase:
+                      item.product.salePrice ?? item.product.price,
+                  }));
+                  const formData = new FormData();
+                  formData.append("items", JSON.stringify(orderItems));
+                  Object.entries(address).forEach(([k, v]) =>
+                    formData.append(k, v)
+                  );
+                  formData.append("paymentMethod", "cod");
+                  if (couponCode.trim())
+                    formData.append("couponCode", couponCode.trim());
+                  // no slipFile for COD
+                  return fetch("/api/orders", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                  });
+                })();
                 setLoading(false);
-                router.push("/success");
+                if (res.ok) {
+                  router.push("/success");
+                } else {
+                  const err = await res.json();
+                  alert("Error: " + err.error);
+                }
               }}
-              className="px-6 py-3 bg-yellow-500 text-white rounded"
+              disabled={loading}
+              className="px-6 py-3 bg-yellow-500 text-white rounded disabled:opacity-50"
             >
-              ยืนยันเก็บเงินปลายทาง
+              {loading ? "Processing..." : "ยืนยันเก็บเงินปลายทาง"}
             </button>
           )}
         </div>

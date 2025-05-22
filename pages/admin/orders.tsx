@@ -1,10 +1,11 @@
 // pages/admin/orders.tsx
 import { GetServerSideProps, NextPage } from "next";
-import Layout from "@/components/Layout";
+import Layout from "@/components/AdminLayout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { adminGuard } from "@/lib/adminGuard";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext"; // นำเข้าบริบท Auth
 
 interface OrderItem {
   id: string;
@@ -38,15 +39,15 @@ interface Props {
 }
 
 const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
+  const { token } = useAuth(); // ดึง token จาก context
   const [orders, setOrders] = useState<Order[]>(initialOrders);
 
   // ฟังก์ชันเปลี่ยนสถานะออเดอร์
   const updateStatus = async (orderId: string, newStatus: string) => {
     const res = await fetch(`/api/orders/${orderId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      credentials: "include", // ← ให้ส่ง cookie ไปด้วย
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
     if (res.ok) {
@@ -55,6 +56,20 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
       );
     } else {
       alert("อัปเดตสถานะไม่สำเร็จ");
+    }
+  };
+
+  // ฟังก์ชันลบคำสั่งซื้อ
+  const deleteOrder = async (orderId: string) => {
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบคำสั่งซื้อนี้?")) return;
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: "DELETE",
+      credentials: "include", // ← ส่ง cookie ไปด้วย
+    });
+    if (res.status === 204) {
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } else {
+      alert("ลบคำสั่งซื้อไม่สำเร็จ");
     }
   };
 
@@ -77,8 +92,8 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
                   <strong>ที่อยู่:</strong> {order.line1} {order.line2}{" "}
                   {order.city} {order.postalCode} {order.country}
                 </div>
-                <div>
-                  <strong>สถานะ:</strong>{" "}
+                <div className="flex items-center space-x-2">
+                  <strong>สถานะ:</strong>
                   <select
                     value={order.status}
                     onChange={(e) => updateStatus(order.id, e.target.value)}
@@ -90,6 +105,12 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
                     <option value="COMPLETED">สำเร็จ</option>
                     <option value="CANCELLED">ยกเลิก</option>
                   </select>
+                  <button
+                    onClick={() => deleteOrder(order.id)}
+                    className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    ลบ
+                  </button>
                 </div>
               </div>
 
@@ -112,7 +133,6 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
                 </ul>
               </div>
 
-              {/* เพิ่มส่วนนี้แสดงรูปสลิป */}
               {order.slipUrl && (
                 <div className="mt-2">
                   <strong>สลิปโอนเงิน:</strong>
@@ -143,26 +163,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) =>
   adminGuard(ctx, async () => {
     const rawOrders = await prisma.order.findMany({
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        items: { include: { product: true } },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
-    // แปลงวันที่ให้เป็น string
     const orders = rawOrders.map((o) => ({
       id: o.id,
-      recipient: (o as any).recipient || "", // เพิ่ม recipient ถ้ามีใน schema
-      line1: (o as any).line1 || "",
-      line2: (o as any).line2 ?? null,
-      city: (o as any).city || "",
-      postalCode: (o as any).postalCode ?? null,
-      country: (o as any).country ?? null,
+      recipient: o.recipient,
+      line1: o.line1,
+      line2: o.line2,
+      city: o.city,
+      postalCode: o.postalCode,
+      country: o.country,
       paymentMethod: o.paymentMethod,
       status: o.status,
       totalAmount: o.totalAmount,
