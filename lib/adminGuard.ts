@@ -10,7 +10,7 @@ export async function adminGuard<P>(
   const { req } = ctx;
   const token = req.cookies.token;
   if (!token) {
-    return { redirect: { destination: "/admin/adlogin", permanent: false } };
+    return { redirect: { destination: "/admin/login", permanent: false } };
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET) as any;
@@ -19,6 +19,6 @@ export async function adminGuard<P>(
     }
     return await fn(ctx);
   } catch {
-    return { redirect: { destination: "/admin/adlogin", permanent: false } };
+    return { redirect: { destination: "/admin/login", permanent: false } };
   }
 }
