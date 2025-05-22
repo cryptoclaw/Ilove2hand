@@ -14,14 +14,14 @@ import {
 } from "lucide-react";
 
 export default function AdminSidebar() {
-  const { logout, user } = useAuth();
+  const { adminLogout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   // ฟังก์ชัน logout และ redirect ไปหน้า adlogin
   const handleLogout = () => {
-    logout(); // เรียก context logout
-    router.push("/admin/adlogin"); // เปลี่ยนหน้าไป adlogin
+    adminLogout();
+    // หลัง logout redirect ไปหน้า login
   };
 
   // ฟังก์ชันเช็คว่า path ปัจจุบันคืออะไร
@@ -64,7 +64,7 @@ export default function AdminSidebar() {
             <span>Edited Pages</span>
           </Link>
           <Link
-            href="/admin/order-management"
+            href="/admin/orders"
             className={`flex items-center space-x-3 px-3 py-2 rounded transition ${
               isActive("/admin/order-management")
                 ? "bg-white text-green-800"
@@ -124,9 +124,7 @@ export default function AdminSidebar() {
             <path d="M12 12c2.7 0 4-1.8 4-4s-1.3-4-4-4-4 1.8-4 4 1.3 4 4 4zm0 2c-3.3 0-6 2.7-6 6v2h12v-2c0-3.3-2.7-6-6-6z" />
           </svg>
         </div>
-        <div>
-          <p>@{user?.name || "username"}</p>
-        </div>
+        <div></div>
         <button
           onClick={handleLogout}
           className="ml-auto bg-red-600 px-3 py-1.5 rounded hover:bg-red-700 transition flex items-center space-x-1.5 text-sm"
