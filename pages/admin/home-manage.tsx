@@ -29,7 +29,6 @@ interface Product {
   imageUrl?: string | null;
 }
 
-
 export default function HomeManagePage() {
   const [tab, setTab] = useState<"product" | "category" | "banner">("banner");
   const { user, logout } = useAuth();
@@ -65,7 +64,6 @@ export default function HomeManagePage() {
         </nav>
 
         {/* Add button (เหมือนในรูปแบนเนอร์ มีปุ่ม Add) */}
-        
       </div>
 
       {/* Content Section */}
@@ -82,7 +80,6 @@ export default function HomeManagePage() {
       </div>
 
       {/* Footer / User info */}
-      
     </Layout>
   );
 }
@@ -236,6 +233,7 @@ function ManageProductSection() {
     price: "",
     salePrice: "",
     stock: "",
+    categoryId: "",
   });
   const [editFile, setEditFile] = useState<File | null>(null);
 
@@ -258,7 +256,6 @@ function ManageProductSection() {
     }
   };
 
-  // ฟังก์ชันเปิด popup แก้ไขสินค้า
   const openEditModal = (product: Product) => {
     setEditProduct(product);
     setEditForm({
@@ -267,18 +264,19 @@ function ManageProductSection() {
       price: product.price.toString(),
       salePrice: product.salePrice?.toString() || "",
       stock: product.stock.toString(),
+      categoryId: product.categoryId || "",
     });
     setEditFile(null);
   };
 
-  // ฟังก์ชันปิด popup
   const closeEditModal = () => {
     setEditProduct(null);
     setEditFile(null);
   };
 
-  // handle change form แก้ไข
-  const handleEditChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleEditChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) {
       setEditFile(files[0]);
@@ -287,7 +285,6 @@ function ManageProductSection() {
     }
   };
 
-  // ส่งข้อมูลแก้ไขสินค้า
   const handleEditSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!editProduct) return;
@@ -298,15 +295,18 @@ function ManageProductSection() {
     fd.append("price", editForm.price);
     fd.append("salePrice", editForm.salePrice);
     fd.append("stock", editForm.stock);
-    if (editFile) fd.append("image", editFile);
+    fd.append("categoryId", editForm.categoryId);
+    if (editFile) {
+      fd.append("image", editFile);
+    }
 
     const res = await fetch(`/api/products/${editProduct.id}`, {
-      method: "PUT", // หรือ PATCH ตาม API
+      method: "PUT",
       body: fd,
     });
 
     if (res.ok) {
-      const updated = await res.json();
+      const updated: Product = await res.json();
       setProducts((p) =>
         p.map((item) => (item.id === updated.id ? updated : item))
       );
@@ -325,41 +325,53 @@ function ManageProductSection() {
       {products.length === 0 ? (
         <p>ยังไม่มีสินค้า</p>
       ) : (
-        <table className="w-full table-auto border-collapse border border-gray-200 rounded shadow-sm bg-white">
+        <table className="w-full table-auto border-collapse border border-gray-200 rounded shadow bg-white">
           <thead>
             <tr className="bg-gray-100 text-left text-gray-700">
-              <th className="border border-gray-300 px-6 py-3 w-12">#</th>
-              <th className="border border-gray-300 px-6 py-3">Name</th>
-              <th className="border border-gray-300 px-6 py-3">รายละเอียด</th>
-              <th className="border border-gray-300 px-6 py-3">ราคา</th>
-              <th className="border border-gray-300 px-6 py-3 w-40 text-center">รูปสินค้า</th>
-              <th className="border border-gray-300 px-6 py-3 w-32 text-center">การจัดการ</th>
+              <th className="border border-gray-300 px-4 py-2">#</th>
+              <th className="border border-gray-300 px-4 py-2">Name</th>
+              <th className="border border-gray-300 px-4 py-2">รายละเอียด</th>
+              <th className="border border-gray-300 px-4 py-2">ราคา</th>
+              <th className="border border-gray-300 px-4 py-2">สต็อก</th>
+              <th className="border border-gray-300 px-4 py-2">ราคารวม</th>
+              <th className="border border-gray-300 px-4 py-2">หมวดหมู่</th>
+              <th className="border border-gray-300 px-4 py-2">รูปสินค้า</th>
+              <th className="border border-gray-300 px-4 py-2">การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {products.map((p, i) => (
-              <tr key={p.id} className="border border-gray-300 hover:bg-gray-50">
-                <td className="border border-gray-300 px-6 py-3 font-semibold">{i + 1}</td>
-                <td className="border border-gray-300 px-6 py-3 font-semibold">{p.name}</td>
-                <td className="border border-gray-300 px-6 py-3">{p.description || "-"}</td>
-                <td className="border border-gray-300 px-6 py-3 font-semibold">
+              <tr key={p.id} className="hover:bg-gray-50">
+                <td className="border border-gray-300 px-4 py-2">{i + 1}</td>
+                <td className="border border-gray-300 px-4 py-2">{p.name}</td>
+                <td className="border border-gray-300 px-4 py-2">
+                  {p.description || "-"}
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
                   {p.salePrice != null ? (
                     <>
-                      <span className="line-through text-gray-400 mr-2">฿{p.price}</span>
-                      <span className="text-red-600 font-bold">฿{p.salePrice}</span>
+                      <span className="line-through mr-2">฿{p.price}</span>
+                      <span className="text-red-600">฿{p.salePrice}</span>
                     </>
                   ) : (
-                    <span className="text-green-600 font-bold">฿{p.price}</span>
+                    <span className="text-green-600">฿{p.price}</span>
                   )}
                 </td>
-                <td className="border border-gray-300 px-6 py-3 text-center">
+                <td className="border border-gray-300 px-4 py-2">{p.stock}</td>
+                <td className="border border-gray-300 px-4 py-2">
+                  ฿{p.stock * (p.salePrice ?? p.price)}
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
+                  {p.categoryId || "-"}
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
                   <img
                     src={p.imageUrl || "/images/placeholder.png"}
                     alt={p.name}
-                    className="h-16 w-16 object-cover rounded"
+                    className="h-12 w-12 object-cover rounded"
                   />
                 </td>
-                <td className="border border-gray-300 px-6 py-3 text-center space-x-4">
+                <td className="border border-gray-300 px-4 py-2 space-x-2">
                   <button
                     onClick={() => openEditModal(p)}
                     className="text-blue-600 hover:underline"
@@ -368,7 +380,7 @@ function ManageProductSection() {
                   </button>
                   <button
                     onClick={() => remove(p.id)}
-                    className="bg-red-600 px-3 py-1 rounded text-white hover:bg-red-700"
+                    className="text-red-600 hover:underline"
                   >
                     ลบ
                   </button>
@@ -379,11 +391,10 @@ function ManageProductSection() {
         </table>
       )}
 
-      {/* popup แก้ไขสินค้า */}
       {editProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-auto p-6">
-            <h3 className="text-xl font-semibold mb-4">แก้ไขสินค้า</h3>
+          <div className="bg-white rounded shadow-lg w-full max-w-lg overflow-auto p-6">
+            <h3 className="text-xl mb-4">แก้ไขสินค้า</h3>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <label className="block">
                 รูปภาพ (อัปโหลดใหม่ถ้าต้องการ)
@@ -447,6 +458,16 @@ function ManageProductSection() {
                   className="w-full border rounded p-2 mt-1"
                 />
               </label>
+              <label className="block">
+                หมวดหมู่ (ID):
+                <input
+                  type="text"
+                  name="categoryId"
+                  value={editForm.categoryId}
+                  onChange={handleEditChange}
+                  className="w-full border rounded p-2 mt-1"
+                />
+              </label>
               <div className="flex justify-end space-x-4 mt-4">
                 <button
                   type="button"
@@ -469,7 +490,6 @@ function ManageProductSection() {
     </div>
   );
 }
-
 
 // --- Manage Category Section ---
 function ManageCategorySection() {
@@ -655,8 +675,12 @@ export function ManageBannerSection() {
         <tbody>
           {items.map((b, i) => (
             <tr key={b.id} className="border border-gray-300">
-              <td className="border border-gray-300 px-4 py-4">{(i + 1).toString().padStart(2, "0")}</td>
-              <td className="border border-gray-300 px-4 py-4 font-semibold">{b.title || "-"}</td>
+              <td className="border border-gray-300 px-4 py-4">
+                {(i + 1).toString().padStart(2, "0")}
+              </td>
+              <td className="border border-gray-300 px-4 py-4 font-semibold">
+                {b.title || "-"}
+              </td>
               <td className="border border-gray-300 px-4 py-2">
                 <img
                   src={b.imageUrl}
