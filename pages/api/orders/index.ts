@@ -54,7 +54,11 @@ export default async function handler(
         : null;
 
       // parse items
-      let items: any[];
+      let items: {
+        productId: string;
+        quantity: number;
+        priceAtPurchase: number;
+      }[];
       const rawItems = fields.items;
       if (typeof rawItems === "string") {
         items = JSON.parse(rawItems);
@@ -62,6 +66,24 @@ export default async function handler(
         items = JSON.parse(rawItems[0]);
       } else {
         items = rawItems as any[];
+      }
+
+      // ตรวจสอบ stock ก่อน
+      for (const item of items) {
+        const prod = await prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { stock: true, name: true },
+        });
+        if (!prod) {
+          return res
+            .status(400)
+            .json({ error: `ไม่พบสินค้า id: ${item.productId}` });
+        }
+        if (prod.stock < item.quantity) {
+          return res
+            .status(400)
+            .json({ error: `สต็อกสินค้า ${prod.name} ไม่เพียงพอ` });
+        }
       }
 
       // คำนวณยอดรวมก่อนหักส่วนลด
@@ -111,31 +133,38 @@ export default async function handler(
         slipUrl = fields.slipUrl;
       }
 
-      // สร้าง order กับ relation ไปยัง OrderItem
-      const newOrder = await prisma.order.create({
-        data: {
-          userId: user.id,
-          recipient,
-          line1,
-          line2,
-          city,
-          postalCode,
-          country,
-          paymentMethod,
-          slipUrl,
-          totalAmount: totalAfterDiscount,
-          couponId,
-          // status จะ default เป็น "PENDING"
-          items: {
-            create: items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              priceAtPurchase: item.priceAtPurchase,
-            })),
+      // สร้าง order และลด stock ใน transaction
+      const [newOrder] = await prisma.$transaction([
+        prisma.order.create({
+          data: {
+            userId: user.id,
+            recipient,
+            line1,
+            line2,
+            city,
+            postalCode,
+            country,
+            paymentMethod,
+            slipUrl,
+            totalAmount: totalAfterDiscount,
+            couponId,
+            items: {
+              create: items.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                priceAtPurchase: item.priceAtPurchase,
+              })),
+            },
           },
-        },
-        include: { items: true },
-      });
+          include: { items: true },
+        }),
+        ...items.map((item) =>
+          prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          })
+        ),
+      ]);
 
       return res.status(201).json(newOrder);
     } catch (error) {

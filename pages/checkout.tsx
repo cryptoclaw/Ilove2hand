@@ -1,3 +1,4 @@
+// pages/checkout.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,7 +6,15 @@ import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import ProvinceSelect from "@/components/ProvinceSelect";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 
+// Types
 interface CartItem {
   id: string;
   quantity: number;
@@ -18,13 +27,32 @@ interface CartItem {
   };
 }
 
+type OrderItemPayload = {
+  productId: string;
+  quantity: number;
+  priceAtPurchase: number;
+};
+
+type AddressPayload = {
+  recipient: string;
+  line1: string;
+  line2: string;
+  city: string;
+  postalCode: string;
+  country: string;
+};
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+);
+
 export default function CheckoutPage() {
   const { token } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [address, setAddress] = useState({
+  const [address, setAddress] = useState<AddressPayload>({
     recipient: "",
     line1: "",
     line2: "",
@@ -84,78 +112,126 @@ export default function CheckoutPage() {
         const { discountValue } = await res.json();
         setDiscountAmount(discountValue);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setCouponError("เกิดข้อผิดพลาดในการตรวจสอบคูปอง");
     }
   };
 
-  const placeOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!address.recipient || !address.line1 || !address.city) {
-      alert("กรุณากรอกที่อยู่จัดส่งให้ครบถ้วน");
-      return;
-    }
-
-    setLoading(true);
-    const orderItems = items.map((item) => ({
+  const createBankTransferOrder = async (): Promise<Response> => {
+    const orderItems: OrderItemPayload[] = items.map((item) => ({
       productId: item.product.id,
       quantity: item.quantity,
       priceAtPurchase: item.product.salePrice ?? item.product.price,
     }));
+    const formData = new FormData();
+    formData.append("items", JSON.stringify(orderItems));
+    Object.entries(address).forEach(([key, val]) => {
+      formData.append(key, val);
+    });
+    formData.append("paymentMethod", paymentMethod);
+    if (couponCode.trim()) formData.append("couponCode", couponCode.trim());
+    if (slipFile) formData.append("slipFile", slipFile, slipFile.name);
 
-    try {
-      let res: Response;
-      if (paymentMethod === "bank_transfer" && slipFile) {
-        const formData = new FormData();
-        formData.append("items", JSON.stringify(orderItems));
-        Object.entries(address).forEach(([key, val]) => {
-          formData.append(key, val);
-        });
-        formData.append("paymentMethod", paymentMethod);
-        if (couponCode.trim()) formData.append("couponCode", couponCode.trim());
-        formData.append("slipFile", slipFile, slipFile.name);
+    return await fetch("/api/orders", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  };
 
-        res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-      } else {
-        // ส่ง JSON ปกติ
-        const body = {
-          items: orderItems,
-          ...address,
-          paymentMethod,
-          couponCode: couponCode.trim() || null,
-        };
-        res = await fetch("/api/orders", {
+  type PaymentFormProps = {
+    orderItems: OrderItemPayload[];
+    address: AddressPayload;
+    total: number;
+  };
+
+  const PaymentForm: React.FC<PaymentFormProps> = ({
+    orderItems,
+    address,
+    total,
+  }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [processing, setProcessing] = useState(false);
+
+    const onSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!stripe || !elements) return;
+      setProcessing(true);
+      const { clientSecret, error: intentError } = await fetch(
+        "/api/payments/create-intent",
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ amount: total * 100 }),
+        }
+      ).then((r) => r.json());
+      if (intentError) {
+        alert(intentError);
+        setProcessing(false);
+        return;
+      }
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: elements.getElement(CardElement)!,
+          },
+        }
+      );
+      if (error) {
+        alert(error.message);
+        setProcessing(false);
+        return;
+      }
+      if (paymentIntent?.status === "succeeded") {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            items: orderItems,
+            ...address,
+            paymentMethod: "credit_card",
+            couponCode: couponCode.trim() || null,
+            slipUrl: null,
+          }),
         });
+        if (res.ok) {
+          router.push("/success");
+        } else {
+          const err = await res.json();
+          alert("Order error: " + err.error);
+        }
       }
+      setProcessing(false);
+    };
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Create order failed");
-      }
-      router.push("/success");
-    } catch (error: any) {
-      console.error(error);
-      alert("เกิดข้อผิดพลาดในการสั่งซื้อ: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+    return (
+      <form onSubmit={onSubmit} className="space-y-6">
+        <CardElement className="border p-2 rounded" />
+        <button
+          type="submit"
+          disabled={!stripe || processing}
+          className="px-6 py-3 bg-blue-600 text-white rounded disabled:opacity-50"
+        >
+          {processing ? "Processing..." : `Pay ${total} ฿`}
+        </button>
+      </form>
+    );
   };
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <Layout title="Checkout">
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
-      <form onSubmit={placeOrder} className="space-y-6">
+      <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
         {/* รายการสินค้า */}
         <div className="space-y-4">
           {items.map((item) => {
@@ -206,7 +282,12 @@ export default function CheckoutPage() {
           </div>
           {couponError && <p className="mt-1 text-red-600">{couponError}</p>}
           {discountAmount > 0 && (
-            <p className="mt-1 text-green-700">รับส่วนลด {discountAmount} ฿</p>
+            <div className="mt-1">
+              <span className="line-through text-gray-500 mr-2">
+                {subtotal} ฿
+              </span>
+              <span className="text-green-700 font-bold">{total} ฿</span>
+            </div>
           )}
         </div>
 
@@ -262,7 +343,7 @@ export default function CheckoutPage() {
           />
         </div>
 
-        {/* วิธีชำระเงิน และสลิป */}
+        {/* วิธีชำระเงิน */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-2">วิธีการชำระเงิน</h2>
           <select
@@ -280,7 +361,6 @@ export default function CheckoutPage() {
               <h3 className="text-lg font-semibold mb-2">อัปโหลดสลิปการโอน</h3>
               <input
                 type="file"
-                name="slipFile"
                 accept="image/*"
                 onChange={(e) => setSlipFile(e.target.files?.[0] || null)}
                 className="border p-2 rounded w-full"
@@ -292,24 +372,55 @@ export default function CheckoutPage() {
                   className="w-56 h-56 object-contain"
                 />
               </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  const res = await createBankTransferOrder();
+                  setLoading(false);
+                  if (res.ok) {
+                    router.push("/success");
+                  } else {
+                    const err = await res.json();
+                    alert("Error: " + err.error);
+                  }
+                }}
+                disabled={loading}
+                className="px-6 py-3 bg-green-600 text-white rounded disabled:opacity-50 mt-4"
+              >
+                {loading ? "Processing..." : "ยืนยันโอนผ่านธนาคาร"}
+              </button>
             </div>
           )}
-        </div>
 
-        {/* ยอดรวมและปุ่มยืนยัน */}
-        <div className="flex justify-between items-center border-t pt-4">
-          <span className="text-xl font-bold">ยอดรวมทั้งสิ้น:</span>
-          <span className="text-2xl font-bold text-green-700">{total} ฿</span>
-        </div>
+          {paymentMethod === "credit_card" && (
+            <Elements stripe={stripePromise}>
+              <PaymentForm
+                orderItems={items.map((item) => ({
+                  productId: item.product.id,
+                  quantity: item.quantity,
+                  priceAtPurchase: item.product.salePrice ?? item.product.price,
+                }))}
+                address={address}
+                total={total}
+              />
+            </Elements>
+          )}
 
-        <div className="text-right">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            {loading ? "กำลังดำเนินการ..." : "ยืนยันคำสั่งซื้อ"}
-          </button>
+          {paymentMethod === "cod" && (
+            <button
+              type="button"
+              onClick={async () => {
+                setLoading(true);
+                // Implement COD order creation similar to bank transfer
+                setLoading(false);
+                router.push("/success");
+              }}
+              className="px-6 py-3 bg-yellow-500 text-white rounded"
+            >
+              ยืนยันเก็บเงินปลายทาง
+            </button>
+          )}
         </div>
       </form>
     </Layout>
