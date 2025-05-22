@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AdminSidebar() {
-  const { logout } = useAuth();
+  const { adminLogout } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
-    logout();
-    router.push("/admin/login"); // หลัง logout redirect ไปหน้า login
+    adminLogout();
+    // หลัง logout redirect ไปหน้า login
   };
 
   return (

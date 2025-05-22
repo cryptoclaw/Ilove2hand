@@ -8,7 +8,7 @@ import {
   useEffect,
 } from "react";
 import Cookies from "js-cookie";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -26,6 +26,7 @@ interface AuthContextValue {
    */
   login: (email: string, password: string, remember: boolean) => Promise<void>;
   logout: () => void;
+  adminLogout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -50,12 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ฟังก์ชันล็อกอิน รับ flag remember
-  const login = async (
-    email: string,
-    password: string,
-    remember: boolean
-  ) => {
+  const login = async (email: string, password: string, remember: boolean) => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,13 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (remember) {
       Cookies.set("token", tkn, { expires: 7 });
     } else {
-      // session cookie (ไม่กำหนด expires)
       Cookies.set("token", tkn);
     }
 
     setUser(u);
     setToken(tkn);
-
     router.push("/");
   };
 
@@ -88,8 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   };
 
+  const adminLogout = () => {
+    Cookies.remove("token");
+    setUser(null);
+    setToken(null);
+    router.push("/admin/login");
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, adminLogout }}>
       {children}
     </AuthContext.Provider>
   );
