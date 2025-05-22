@@ -1,4 +1,3 @@
-// pages/api/cart.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import { getUserFromToken } from "@/lib/auth";
@@ -20,44 +19,43 @@ export default async function handler(
       include: {
         items: {
           include: {
-            product: true, // ดึงข้อมูล Product ทั้งหมดมาด้วย
+            product: true,
           },
         },
       },
     });
-    // ถ้า user ยังไม่มี cart สร้างเปล่า ๆ
     const items = cart?.items || [];
     return res.status(200).json({ items });
   }
 
-  // POST /api/cart → เพิ่มหรืออัปเดตจำนวนในตะกร้า
+  // POST /api/cart → เพิ่มหรืออัปเดตจำนวน (เพิ่มจำนวนเข้าไป)
   if (req.method === "POST") {
     const { productId, quantity } = req.body as {
       productId: string;
       quantity: number;
     };
 
-    // 1) upsert cart
+    if (!productId || !quantity || quantity <= 0) {
+      return res.status(400).json({ error: "Invalid productId or quantity" });
+    }
+
     const cart = await prisma.cart.upsert({
       where: { userId: user.id },
       create: { userId: user.id },
       update: {},
     });
 
-    // 2) หาดูว่ามีไอเท็มนี้อยู่แล้วหรือไม่
     const existing = await prisma.cartItem.findFirst({
       where: { cartId: cart.id, productId },
     });
 
     let item;
     if (existing) {
-      // 3a) ถ้ามีแล้ว → update จำนวน
       item = await prisma.cartItem.update({
         where: { id: existing.id },
         data: { quantity: existing.quantity + quantity },
       });
     } else {
-      // 3b) ถ้าไม่มี → สร้างใหม่
       item = await prisma.cartItem.create({
         data: { cartId: cart.id, productId, quantity },
       });
@@ -66,7 +64,29 @@ export default async function handler(
     return res.status(200).json(item);
   }
 
-  // ลบสินค้าออกจากตะกร้า
+  // PATCH /api/cart → อัปเดตจำนวนสินค้าแบบ set จำนวนใหม่
+  if (req.method === "PATCH") {
+    const { itemId, quantity } = req.body as {
+      itemId: string;
+      quantity: number;
+    };
+
+    if (!itemId || quantity === undefined || quantity < 1) {
+      return res.status(400).json({ error: "Invalid itemId or quantity" });
+    }
+
+    try {
+      const updatedItem = await prisma.cartItem.update({
+        where: { id: itemId },
+        data: { quantity },
+      });
+      return res.status(200).json(updatedItem);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  // DELETE /api/cart → ลบสินค้าออกจากตะกร้า
   if (req.method === "DELETE") {
     const { itemId } = req.body as { itemId?: string };
     if (!itemId) {
@@ -80,7 +100,6 @@ export default async function handler(
     }
   }
 
-  // อื่น ๆ → ไม่อนุญาต
-  res.setHeader("Allow", ["GET", "POST"]);
+  res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }

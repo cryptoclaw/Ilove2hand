@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import type { Product } from "@/types/product";
 import { useRouter } from "next/navigation";
 
 interface CartItem {
@@ -19,6 +18,7 @@ interface CartItem {
     price: number;
     salePrice?: number | null;
     imageUrl?: string | null;
+    stock: number; // เพิ่ม stock เข้ามาใน type
   };
 }
 
@@ -28,7 +28,6 @@ export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // โหลดข้อมูลตะกร้า
   const loadCart = async () => {
     if (!token) return;
     setLoading(true);
@@ -45,7 +44,43 @@ export default function CartPage() {
     }
   };
 
-  // ลบรายการจากตะกร้า
+  // อัพเดตจำนวนสินค้าในตะกร้า พร้อมตรวจสอบ stock ไม่ให้เกิน
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    if (!token) return;
+    if (quantity < 1) return;
+
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    if (quantity > item.product.stock) {
+      alert(`จำนวนเกิน stock ที่มี (สูงสุด ${item.product.stock})`);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/cart", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ itemId, quantity }),
+      });
+      if (res.ok) {
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === itemId ? { ...item, quantity } : item
+          )
+        );
+      } else {
+        const err = await res.json();
+        alert("Error: " + err.error);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const removeItem = async (itemId: string) => {
     if (!token) return;
     try {
@@ -57,7 +92,6 @@ export default function CartPage() {
         },
         body: JSON.stringify({ itemId }),
       });
-      // โหลดข้อมูลใหม่
       loadCart();
     } catch (error) {
       console.error(error);
@@ -73,7 +107,6 @@ export default function CartPage() {
     return sum + unit * item.quantity;
   }, 0);
 
-  // ถ้ายังไม่ล็อกอิน
   if (!token) {
     return (
       <Layout title="ตะกร้าสินค้า">
@@ -136,12 +169,51 @@ export default function CartPage() {
                     <p className="text-gray-500 text-sm mt-1">
                       ราคาต่อหน่วย: ฿{unit}
                     </p>
-                    <p className="text-gray-700">จำนวน: {item.quantity}</p>
+                    <div className="flex items-center mt-2 space-x-2">
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity - 1)
+                        }
+                        className="w-8 h-8 bg-gray-200 rounded hover:bg-gray-300 flex items-center justify-center"
+                      >
+                        –
+                      </button>
+                      <input
+                        type="number"
+                        className="w-12 border text-center rounded"
+                        value={item.quantity}
+                        min={1}
+                        max={item.product.stock} // กำหนด max จาก stock
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (val >= 1 && val <= item.product.stock)
+                            updateQuantity(item.id, val);
+                          else if (val > item.product.stock)
+                            alert(
+                              `จำนวนเกิน stock ที่มี (สูงสุด ${item.product.stock})`
+                            );
+                        }}
+                      />
+                      <button
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity + 1)
+                        }
+                        className="w-8 h-8 bg-gray-200 rounded hover:bg-gray-300 flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">
                       รวม: ฿{unit * item.quantity}
                     </p>
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="mt-2 text-red-600 hover:underline"
+                    >
+                      ลบ
+                    </button>
                   </div>
                 </div>
               );

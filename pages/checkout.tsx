@@ -24,6 +24,7 @@ interface CartItem {
     price: number;
     salePrice?: number | null;
     imageUrl?: string | null;
+    stock: number; // เพิ่ม stock เข้ามาใน type
   };
 }
 
@@ -82,6 +83,36 @@ export default function CheckoutPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [token, router]);
+
+  // ฟังก์ชันอัพเดตจำนวนสินค้าในตะกร้า
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    if (newQuantity < 1) {
+      alert("จำนวนต้องไม่น้อยกว่า 1");
+      return;
+    }
+    if (newQuantity > item.product.stock) {
+      alert(`จำนวนเกิน stock ที่มี (สูงสุด ${item.product.stock})`);
+      return;
+    }
+
+    // อัพเดตจำนวนใน state
+    setItems((prev) =>
+      prev.map((i) => (i.id === itemId ? { ...i, quantity: newQuantity } : i))
+    );
+
+    // เรียก API อัพเดตจำนวนในตะกร้าบน server
+    await fetch(`/api/cart/${itemId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ quantity: newQuantity }),
+    });
+  };
 
   const subtotal = items.reduce((sum, item) => {
     const unit = item.product.salePrice ?? item.product.price;

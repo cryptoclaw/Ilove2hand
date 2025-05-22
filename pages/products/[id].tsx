@@ -1,4 +1,3 @@
-// pages/products/[id].tsx
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router"; // เปลี่ยน import
 import type { GetServerSideProps } from "next"; // ประกาศ type-only import
@@ -37,8 +36,29 @@ export default function ProductPage({ product }: ProductPageProps) {
       return;
     }
     if (error) return;
+
     setLoading(true);
     try {
+      // 1. ดึงตะกร้าเพื่อตรวจสอบจำนวนสินค้า
+      const cartRes = await fetch("/api/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!cartRes.ok) throw new Error("ไม่สามารถดึงข้อมูลตะกร้าได้");
+      const cartData = await cartRes.json();
+      const cartItems: { productId: string; quantity: number }[] = cartData.items || [];
+
+      // 2. หา quantity ในตะกร้าของสินค้าชิ้นนี้
+      const itemInCart = cartItems.find((item) => item.productId === product.id);
+      const currentQuantity = itemInCart?.quantity ?? 0;
+
+      // 3. ตรวจสอบจำนวนรวม ถ้าเกิน stock แจ้ง error และ return
+      if (currentQuantity + qty > product.stock) {
+        setError(`สั่งได้สูงสุด ${product.stock} ชิ้น (มีในตะกร้าแล้ว ${currentQuantity} ชิ้น)`);
+        setLoading(false);
+        return;
+      }
+
+      // 4. ถ้าไม่เกิน ให้เพิ่มสินค้าในตะกร้า
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -47,10 +67,12 @@ export default function ProductPage({ product }: ProductPageProps) {
         },
         body: JSON.stringify({ productId: product.id, quantity: qty }),
       });
+
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "เพิ่มลงตะกร้าไม่สำเร็จ");
       }
+
       router.push("/cart");
     } catch (err: any) {
       console.error(err);
