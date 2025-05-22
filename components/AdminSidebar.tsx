@@ -64,7 +64,7 @@ export default function AdminSidebar() {
             <span>Edited Pages</span>
           </Link>
           <Link
-            href="/admin/order-management"
+            href="/admin/orders"
             className={`flex items-center space-x-3 px-3 py-2 rounded transition ${
               isActive("/admin/order-management")
                 ? "bg-white text-green-800"
