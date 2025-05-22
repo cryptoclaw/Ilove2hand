@@ -29,7 +29,6 @@ interface Product {
   imageUrl?: string | null;
 }
 
-
 export default function HomeManagePage() {
   const [tab, setTab] = useState<"product" | "category" | "banner">("banner");
   const { user, logout } = useAuth();
@@ -65,7 +64,6 @@ export default function HomeManagePage() {
         </nav>
 
         {/* Add button (เหมือนในรูปแบนเนอร์ มีปุ่ม Add) */}
-        
       </div>
 
       {/* Content Section */}
@@ -82,7 +80,6 @@ export default function HomeManagePage() {
       </div>
 
       {/* Footer / User info */}
-      
     </Layout>
   );
 }
@@ -278,7 +275,9 @@ function ManageProductSection() {
   };
 
   // handle change form แก้ไข
-  const handleEditChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleEditChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) {
       setEditFile(files[0]);
@@ -301,7 +300,7 @@ function ManageProductSection() {
     if (editFile) fd.append("image", editFile);
 
     const res = await fetch(`/api/products/${editProduct.id}`, {
-      method: "PUT", // หรือ PATCH ตาม API
+      method: "PUT",
       body: fd,
     });
 
@@ -332,26 +331,47 @@ function ManageProductSection() {
               <th className="border border-gray-300 px-6 py-3">Name</th>
               <th className="border border-gray-300 px-6 py-3">รายละเอียด</th>
               <th className="border border-gray-300 px-6 py-3">ราคา</th>
-              <th className="border border-gray-300 px-6 py-3 w-40 text-center">รูปสินค้า</th>
-              <th className="border border-gray-300 px-6 py-3 w-32 text-center">การจัดการ</th>
+              <th className="border border-gray-300 px-6 py-3">Stock</th>{" "}
+              {/* เพิ่มคอลัมน์ Stock */}
+              <th className="border border-gray-300 px-6 py-3 w-40 text-center">
+                รูปสินค้า
+              </th>
+              <th className="border border-gray-300 px-6 py-3 w-32 text-center">
+                การจัดการ
+              </th>
             </tr>
           </thead>
           <tbody>
             {products.map((p, i) => (
-              <tr key={p.id} className="border border-gray-300 hover:bg-gray-50">
-                <td className="border border-gray-300 px-6 py-3 font-semibold">{i + 1}</td>
-                <td className="border border-gray-300 px-6 py-3 font-semibold">{p.name}</td>
-                <td className="border border-gray-300 px-6 py-3">{p.description || "-"}</td>
+              <tr
+                key={p.id}
+                className="border border-gray-300 hover:bg-gray-50"
+              >
+                <td className="border border-gray-300 px-6 py-3 font-semibold">
+                  {i + 1}
+                </td>
+                <td className="border border-gray-300 px-6 py-3 font-semibold">
+                  {p.name}
+                </td>
+                <td className="border border-gray-300 px-6 py-3">
+                  {p.description || "-"}
+                </td>
                 <td className="border border-gray-300 px-6 py-3 font-semibold">
                   {p.salePrice != null ? (
                     <>
-                      <span className="line-through text-gray-400 mr-2">฿{p.price}</span>
-                      <span className="text-red-600 font-bold">฿{p.salePrice}</span>
+                      <span className="line-through text-gray-400 mr-2">
+                        ฿{p.price}
+                      </span>
+                      <span className="text-red-600 font-bold">
+                        ฿{p.salePrice}
+                      </span>
                     </>
                   ) : (
                     <span className="text-green-600 font-bold">฿{p.price}</span>
                   )}
                 </td>
+                <td className="border border-gray-300 px-6 py-3">{p.stock}</td>{" "}
+                {/* แสดง stock */}
                 <td className="border border-gray-300 px-6 py-3 text-center">
                   <img
                     src={p.imageUrl || "/images/placeholder.png"}
@@ -359,19 +379,21 @@ function ManageProductSection() {
                     className="h-16 w-16 object-cover rounded"
                   />
                 </td>
-                <td className="border border-gray-300 px-6 py-3 text-center space-x-4">
-                  <button
-                    onClick={() => openEditModal(p)}
-                    className="text-blue-600 hover:underline"
-                  >
-                    แก้ไข
-                  </button>
-                  <button
-                    onClick={() => remove(p.id)}
-                    className="bg-red-600 px-3 py-1 rounded text-white hover:bg-red-700"
-                  >
-                    ลบ
-                  </button>
+                <td className="border border-gray-300 px-6 py-3 text-center">
+                  <div className="flex items-center justify-center space-x-4">
+                    <button
+                      onClick={() => openEditModal(p)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      แก้ไข
+                    </button>
+                    <button
+                      onClick={() => remove(p.id)}
+                      className="bg-red-600 px-3 py-1 rounded text-white hover:bg-red-700"
+                    >
+                      ลบ
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -470,7 +492,6 @@ function ManageProductSection() {
   );
 }
 
-
 // --- Manage Category Section ---
 function ManageCategorySection() {
   const [cats, setCats] = useState<Category[]>([]);
@@ -551,20 +572,26 @@ export function ManageBannerSection() {
     order: number;
   }>({ title: "", sub: "", order: 0 });
 
+  // สเตทสำหรับแก้ไข
+  const [editBanner, setEditBanner] = useState<Banner | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", sub: "", order: 0 });
+  const [editFile, setEditFile] = useState<File | null>(null);
+
   useEffect(() => {
     fetch("/api/banners")
       .then((r) => r.json())
-      .then((data) => setItems(data.items))
+      .then((data) => setItems(data.items || data))
       .catch(console.error);
   }, []);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target as any;
-    if (name === "image" && files) {
-      setFile(files[0]);
-    } else {
-      setForm((f) => ({ ...f, [name]: value }));
-    }
+    if (name === "image" && files) setFile(files[0]);
+    else
+      setForm((f) => ({
+        ...f,
+        [name]: name === "order" ? Number(value) : value,
+      }));
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -572,15 +599,12 @@ export function ManageBannerSection() {
     if (!file) return alert("กรุณาเลือกไฟล์รูปก่อน");
 
     const fd = new FormData();
-    if (form.title.trim()) fd.append("title", form.title.trim());
-    if (form.sub.trim()) fd.append("sub", form.sub.trim());
+    if (form.title.trim()) fd.append("title", form.title);
+    if (form.sub.trim()) fd.append("sub", form.sub);
     fd.append("order", String(form.order));
     fd.append("image", file);
 
-    const res = await fetch("/api/banners", {
-      method: "POST",
-      body: fd,
-    });
+    const res = await fetch("/api/banners", { method: "POST", body: fd });
     if (res.ok) {
       const newBanner: Banner = await res.json();
       setItems((prev) => [...prev, newBanner]);
@@ -591,6 +615,7 @@ export function ManageBannerSection() {
     }
   };
 
+  // ลบ
   const onDelete = async (id: string) => {
     if (!confirm("ต้องการลบแบนเนอร์นี้หรือไม่?")) return;
     const res = await fetch(`/api/banners/${id}`, { method: "DELETE" });
@@ -601,10 +626,56 @@ export function ManageBannerSection() {
     }
   };
 
+  // เปิด modal แก้ไข
+  const openEditModal = (b: Banner) => {
+    setEditBanner(b);
+    setEditForm({ title: b.title || "", sub: b.sub || "", order: b.order });
+    setEditFile(null);
+  };
+  const closeEditModal = () => setEditBanner(null);
+
+  const handleEditChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value, files } = e.target as any;
+    if (name === "image" && files) {
+      setEditFile(files[0]);
+    } else {
+      setEditForm((f) => ({
+        ...f,
+        [name]: name === "order" ? Number(value) : value,
+      }));
+    }
+  };
+
+  const handleEditSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editBanner) return;
+
+    const fd = new FormData();
+    fd.append("title", editForm.title);
+    fd.append("sub", editForm.sub);
+    fd.append("order", String(editForm.order));
+    if (editFile) fd.append("image", editFile);
+
+    const res = await fetch(`/api/banners/${editBanner.id}`, {
+      method: "PUT",
+      body: fd,
+    });
+
+    if (res.ok) {
+      const updated: Banner = await res.json();
+      setItems((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      closeEditModal();
+    } else {
+      const err = await res.json();
+      alert("Error: " + (err.error || "แก้ไขแบนเนอร์ไม่สำเร็จ"));
+    }
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">จัดการแบนเนอร์</h2>
 
+      {/* ฟอร์มสร้างใหม่ */}
       <form onSubmit={onSubmit} className="space-y-5 mb-6 max-w-xl">
         <input
           name="title"
@@ -643,29 +714,35 @@ export function ManageBannerSection() {
         </button>
       </form>
 
+      {/* ตารางรายการ */}
       <table className="w-full table-auto border-collapse border border-gray-200 bg-white rounded shadow-md">
         <thead>
           <tr className="bg-gray-100 text-left">
-            <th className="border border-gray-300 px-4 py-3 w-12">#</th>
-            <th className="border border-gray-300 px-4 py-3">Name</th>
-            <th className="border border-gray-300 px-4 py-3">Banner</th>
-            <th className="border border-gray-300 px-4 py-3 w-40">การจัดการ</th>
+            <th className="border px-4 py-3 w-12">#</th>
+            <th className="border px-4 py-3">Title</th>
+            <th className="border px-4 py-3">Banner</th>
+            <th className="border px-4 py-3 w-40 text-center">การจัดการ</th>
           </tr>
         </thead>
         <tbody>
           {items.map((b, i) => (
-            <tr key={b.id} className="border border-gray-300">
-              <td className="border border-gray-300 px-4 py-4">{(i + 1).toString().padStart(2, "0")}</td>
-              <td className="border border-gray-300 px-4 py-4 font-semibold">{b.title || "-"}</td>
-              <td className="border border-gray-300 px-4 py-2">
+            <tr key={b.id} className="border hover:bg-gray-50">
+              <td className="border px-4 py-4">{i + 1}</td>
+              <td className="border px-4 py-4">{b.title || "-"}</td>
+              <td className="border px-4 py-2">
                 <img
                   src={b.imageUrl}
-                  alt={b.title || "Banner image"}
+                  alt={b.title || ""}
                   className="h-16 rounded object-cover"
                 />
               </td>
-              <td className="border border-gray-300 px-4 py-4 space-x-4 text-center">
-                <button className="text-blue-600 hover:underline">แก้ไข</button>
+              <td className="border px-4 py-4 text-center space-x-4">
+                <button
+                  onClick={() => openEditModal(b)}
+                  className="text-blue-600 hover:underline"
+                >
+                  แก้ไข
+                </button>
                 <button
                   onClick={() => onDelete(b.id)}
                   className="bg-red-600 px-3 py-1 rounded text-white hover:bg-red-700"
@@ -677,6 +754,70 @@ export function ManageBannerSection() {
           ))}
         </tbody>
       </table>
+
+      {/* Popup แก้ไข */}
+      {editBanner && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-auto p-6">
+            <h3 className="text-xl font-semibold mb-4">แก้ไขแบนเนอร์</h3>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <label className="block">
+                Title:
+                <input
+                  name="title"
+                  value={editForm.title}
+                  onChange={handleEditChange}
+                  className="w-full border rounded p-2 mt-1"
+                />
+              </label>
+              <label className="block">
+                Sub:
+                <input
+                  name="sub"
+                  value={editForm.sub}
+                  onChange={handleEditChange}
+                  className="w-full border rounded p-2 mt-1"
+                />
+              </label>
+              <label className="block">
+                Order:
+                <input
+                  name="order"
+                  type="number"
+                  value={editForm.order}
+                  onChange={handleEditChange}
+                  className="w-full border rounded p-2 mt-1"
+                />
+              </label>
+              <label className="block">
+                รูปใหม่ (ไม่บังคับ):
+                <input
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditChange}
+                  className="mt-1"
+                />
+              </label>
+              <div className="flex justify-end space-x-4 mt-4">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 rounded border border-gray-400 hover:bg-gray-100"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                >
+                  บันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

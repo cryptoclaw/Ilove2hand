@@ -1,31 +1,121 @@
 // pages/api/banners/[id].ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
+import { IncomingForm, File } from "formidable";
+import fs from "fs";
+import path from "path";
+
+export const config = {
+  api: {
+    bodyParser: false, // ปิด built-in parser เพื่อใช้ formidable
+  },
+};
+
+type Parsed = {
+  fields: Record<string, string>;
+  files: Record<string, File>;
+};
+
+const parseForm = (req: NextApiRequest): Promise<Parsed> =>
+  new Promise((resolve, reject) => {
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const form = new IncomingForm({
+      multiples: false,
+      uploadDir,
+      keepExtensions: true,
+    });
+
+    form.parse(req, (err, fields, files) => {
+      if (err) return reject(err);
+      // cast fields to string
+      const flds: Record<string, string> = {};
+      for (const key in fields) {
+        const val = fields[key];
+        flds[key] = Array.isArray(val) ? (val[0] ?? "") : (val ?? "");
+      }
+      // Normalize files: ensure each value is a single File, not File[]
+      const normalizedFiles: Record<string, File> = {};
+      for (const key in files) {
+        const fileValue = files[key];
+        if (Array.isArray(fileValue)) {
+          normalizedFiles[key] = fileValue[0];
+        } else if (fileValue) {
+          normalizedFiles[key] = fileValue;
+        }
+      }
+      resolve({ fields: flds, files: normalizedFiles });
+    });
+  });
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const id = req.query.id as string;
+  const rawId = req.query.id;
+  const id =
+    typeof rawId === "string"
+      ? rawId
+      : Array.isArray(rawId)
+      ? rawId[0]
+      : null;
 
-  if (req.method === "PUT") {
-    const { title, sub, order } = req.body as {
-      title?: string;
-      sub?: string;
-      order?: number;
-    };
-    const updated = await prisma.banner.update({
-      where: { id },
-      data: { title, sub, order },
-    });
-    return res.status(200).json(updated);
+  if (!id) {
+    return res.status(400).json({ error: "Invalid banner id" });
   }
 
+  // PUT: อัปเดตแบนเนอร์ (รองรับรูปใหม่ด้วย)
+  if (req.method === "PUT") {
+    try {
+      const { fields, files } = await parseForm(req);
+
+      // แปลงค่า fields
+      const title = fields.title?.trim() || null;
+      const sub = fields.sub?.trim() || null;
+      const order = parseInt(fields.order || "0", 10);
+
+      const data: any = { order };
+      if (title !== null) data.title = title;
+      if (sub !== null) data.sub = sub;
+
+      // ถ้ามีรูปใหม่ อัปเดต imageUrl
+      if (files.image) {
+        const file = Array.isArray(files.image) ? files.image[0] : files.image;
+        const tmpPath = (file.filepath || (file as any).path) as string;
+        const fileName = path.basename(tmpPath);
+        data.imageUrl = `/uploads/${fileName}`;
+      }
+
+      const updated = await prisma.banner.update({
+        where: { id },
+        data,
+      });
+
+      return res.status(200).json(updated);
+    } catch (err: any) {
+      console.error("Update banner error:", err);
+      return res
+        .status(500)
+        .json({ error: "เกิดข้อผิดพลาดในการแก้ไขแบนเนอร์" });
+    }
+  }
+
+  // DELETE: ลบแบนเนอร์
   if (req.method === "DELETE") {
-    await prisma.banner.delete({ where: { id } });
-    return res.status(204).end();
+    try {
+      await prisma.banner.delete({ where: { id } });
+      return res.status(204).end();
+    } catch (err: any) {
+      console.error("Delete banner error:", err);
+      return res
+        .status(500)
+        .json({ error: "เกิดข้อผิดพลาดในการลบแบนเนอร์" });
+    }
   }
 
   res.setHeader("Allow", ["PUT", "DELETE"]);
-  res.status(405).end(`Method ${req.method} Not Allowed`);
+  return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
