@@ -11,6 +11,8 @@ if (!JWT_SECRET) {
 interface JwtPayload {
   userId: string;
   role?: string;
+  iat?: number;
+  exp?: number;
 }
 
 /**
@@ -19,7 +21,9 @@ interface JwtPayload {
  */
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    // ถ้ามี prefix “Bearer ” ให้ strip ออกก่อน
+    const raw = token.startsWith("Bearer ") ? token.slice(7) : token;
+    const payload = jwt.verify(raw, JWT_SECRET) as JwtPayload;
     return payload;
   } catch (err) {
     console.error("JWT verify failed:", err);
@@ -37,7 +41,7 @@ export async function getUserFromToken(
   if (!authHeader?.startsWith("Bearer ")) return null;
   const token = authHeader.substring("Bearer ".length);
   const payload = verifyToken(token);
-  if (!payload) return null;
+  if (!payload?.userId) return null;
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },

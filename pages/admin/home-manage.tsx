@@ -233,6 +233,7 @@ function ManageProductSection() {
     price: "",
     salePrice: "",
     stock: "",
+    categoryId: "",
   });
   const [editFile, setEditFile] = useState<File | null>(null);
 
@@ -255,7 +256,6 @@ function ManageProductSection() {
     }
   };
 
-  // ฟังก์ชันเปิด popup แก้ไขสินค้า
   const openEditModal = (product: Product) => {
     setEditProduct(product);
     setEditForm({
@@ -264,11 +264,11 @@ function ManageProductSection() {
       price: product.price.toString(),
       salePrice: product.salePrice?.toString() || "",
       stock: product.stock.toString(),
+      categoryId: product.categoryId || "",
     });
     setEditFile(null);
   };
 
-  // ฟังก์ชันปิด popup
   const closeEditModal = () => {
     setEditProduct(null);
     setEditFile(null);
@@ -286,7 +286,6 @@ function ManageProductSection() {
     }
   };
 
-  // ส่งข้อมูลแก้ไขสินค้า
   const handleEditSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!editProduct) return;
@@ -297,7 +296,10 @@ function ManageProductSection() {
     fd.append("price", editForm.price);
     fd.append("salePrice", editForm.salePrice);
     fd.append("stock", editForm.stock);
-    if (editFile) fd.append("image", editFile);
+    fd.append("categoryId", editForm.categoryId);
+    if (editFile) {
+      fd.append("image", editFile);
+    }
 
     const res = await fetch(`/api/products/${editProduct.id}`, {
       method: "PUT",
@@ -305,7 +307,7 @@ function ManageProductSection() {
     });
 
     if (res.ok) {
-      const updated = await res.json();
+      const updated: Product = await res.json();
       setProducts((p) =>
         p.map((item) => (item.id === updated.id ? updated : item))
       );
@@ -324,7 +326,7 @@ function ManageProductSection() {
       {products.length === 0 ? (
         <p>ยังไม่มีสินค้า</p>
       ) : (
-        <table className="w-full table-auto border-collapse border border-gray-200 rounded shadow-sm bg-white">
+        <table className="w-full table-auto border-collapse border border-gray-200 rounded shadow bg-white">
           <thead>
             <tr className="bg-gray-100 text-left text-gray-700">
               <th className="border border-gray-300 px-6 py-3 w-12">#</th>
@@ -367,7 +369,7 @@ function ManageProductSection() {
                       </span>
                     </>
                   ) : (
-                    <span className="text-green-600 font-bold">฿{p.price}</span>
+                    <span className="text-green-600">฿{p.price}</span>
                   )}
                 </td>
                 <td className="border border-gray-300 px-6 py-3">{p.stock}</td>{" "}
@@ -376,7 +378,7 @@ function ManageProductSection() {
                   <img
                     src={p.imageUrl || "/images/placeholder.png"}
                     alt={p.name}
-                    className="h-16 w-16 object-cover rounded"
+                    className="h-12 w-12 object-cover rounded"
                   />
                 </td>
                 <td className="border border-gray-300 px-6 py-3 text-center">
@@ -401,11 +403,10 @@ function ManageProductSection() {
         </table>
       )}
 
-      {/* popup แก้ไขสินค้า */}
       {editProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-auto p-6">
-            <h3 className="text-xl font-semibold mb-4">แก้ไขสินค้า</h3>
+          <div className="bg-white rounded shadow-lg w-full max-w-lg overflow-auto p-6">
+            <h3 className="text-xl mb-4">แก้ไขสินค้า</h3>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <label className="block">
                 รูปภาพ (อัปโหลดใหม่ถ้าต้องการ)
@@ -466,6 +467,16 @@ function ManageProductSection() {
                   value={editForm.stock}
                   onChange={handleEditChange}
                   required
+                  className="w-full border rounded p-2 mt-1"
+                />
+              </label>
+              <label className="block">
+                หมวดหมู่ (ID):
+                <input
+                  type="text"
+                  name="categoryId"
+                  value={editForm.categoryId}
+                  onChange={handleEditChange}
                   className="w-full border rounded p-2 mt-1"
                 />
               </label>
