@@ -31,7 +31,9 @@ interface Product {
 }
 
 export default function HomeManagePage() {
-  const [tab, setTab] = useState<"product" | "category" | "banner">("banner");
+  const [tab, setTab] = useState<
+    "product" | "category" | "banner" | "subbanner"
+  >("banner");
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -49,6 +51,7 @@ export default function HomeManagePage() {
             { key: "product", label: "สร้างสินค้า" },
             { key: "category", label: "จัดการหมวดหมู่" },
             { key: "banner", label: "จัดการแบนเนอร์" },
+            { key: "subbanner", label: "แก้ไข Sub-Banner" },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -78,6 +81,7 @@ export default function HomeManagePage() {
         )}
         {tab === "category" && <ManageCategorySection />}
         {tab === "banner" && <ManageBannerSection />}
+        {tab === "subbanner" && <ManageSubBannerSection />}
       </div>
 
       {/* Footer / User info */}
@@ -594,6 +598,75 @@ function ManageCategorySection() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+function ManageSubBannerSection() {
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    buttonText: "",
+    buttonLink: "",
+  });
+  useEffect(() => {
+    fetch("/api/subbanner")
+      .then((r) => r.json())
+      .then((data) => setForm(data));
+  }, []);
+
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  };
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await fetch("/api/subbanner", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    alert("อัปเดต Sub-Banner เรียบร้อย");
+  };
+
+  return (
+    <div className="max-w-xl">
+      <h2 className="text-2xl font-semibold mb-4">แก้ไข Sub-Banner</h2>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <input
+          name="title"
+          value={form.title}
+          onChange={onChange}
+          placeholder="Title"
+          className="w-full border p-2 rounded"
+        />
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={onChange}
+          placeholder="Description"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          name="buttonText"
+          value={form.buttonText}
+          onChange={onChange}
+          placeholder="Button Text"
+          className="w-full border p-2 rounded"
+        />
+        <input
+          name="buttonLink"
+          value={form.buttonLink}
+          onChange={onChange}
+          placeholder="Button Link"
+          className="w-full border p-2 rounded"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          บันทึก
+        </button>
+      </form>
     </div>
   );
 }

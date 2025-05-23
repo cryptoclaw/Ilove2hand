@@ -169,3 +169,13 @@ model Supplier {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model SubBanner {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  buttonText  String
+  buttonLink  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
