@@ -82,8 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   };
 
-  const adminLogout = () => {
+  const adminLogout = async () => {
+    // 1. ล้าง HTTP-only cookie บนเซิร์ฟเวอร์
+    await fetch("/api/auth/logout", { method: "POST" });
+
+    // 2. ถ้าคุณเคยเซ็ต cookie ด้วย js-cookie ด้วยชื่อเดียวกัน
     Cookies.remove("token");
+
+    // 3. เคลียร์ state และ redirect
     setUser(null);
     setToken(null);
     router.push("/admin/login");

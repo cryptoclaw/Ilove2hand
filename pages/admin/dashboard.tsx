@@ -15,6 +15,10 @@ import {
   Bar,
   Legend,
 } from "recharts";
+import { adminGuard } from "@/lib/adminGuard";
+import type { GetServerSideProps } from "next";
+export const getServerSideProps: GetServerSideProps = async (ctx) =>
+  adminGuard(ctx, async () => ({ props: {} }));
 
 // Types
 interface Stats {

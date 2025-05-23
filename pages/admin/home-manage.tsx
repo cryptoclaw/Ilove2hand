@@ -4,6 +4,8 @@ import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import Layout from "@/components/AdminLayout"; // ใช้ layout ที่คุณมี
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import type { GetServerSideProps } from "next";
+import { adminGuard } from "@/lib/adminGuard";
 
 interface Category {
   id: string;
@@ -29,6 +31,9 @@ interface Product {
   imageUrl?: string | null;
   isFeatured: boolean;
 }
+
+export const getServerSideProps: GetServerSideProps = async (ctx) =>
+  adminGuard(ctx, async () => ({ props: {} }));
 
 export default function HomeManagePage() {
   const [tab, setTab] = useState<
@@ -228,125 +233,125 @@ function CreateProductSection() {
 // --- Manage Product Section ---
 
 function ManageProductSection() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   // popup แก้ไข
-  const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
     price: "",
     salePrice: "",
     stock: "",
-    categoryId: "",          // เลือกจาก list
-  })
-  const [editFile, setEditFile] = useState<File | null>(null)
+    categoryId: "", // เลือกจาก list
+  });
+  const [editFile, setEditFile] = useState<File | null>(null);
 
   useEffect(() => {
     // โหลดสินค้า
     fetch("/api/products")
-      .then(r => r.json())
-      .then(data => setProducts(data.items || data))
+      .then((r) => r.json())
+      .then((data) => setProducts(data.items || data))
       .catch(console.error)
-      .finally(() => setLoading(false))
+      .finally(() => setLoading(false));
 
     // โหลดหมวดหมู่
     fetch("/api/categories")
-      .then(r => r.json())
-      .then(data => setCategories(data.items || data))
-      .catch(console.error)
-  }, [])
+      .then((r) => r.json())
+      .then((data) => setCategories(data.items || data))
+      .catch(console.error);
+  }, []);
 
   const toggleFeatured = async (id: string, current: boolean) => {
-    setLoadingId(id)
+    setLoadingId(id);
     const res = await fetch(`/api/products/${id}/feature`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isFeatured: !current }),
-    })
+    });
     if (res.ok) {
-      setProducts(p =>
-        p.map(x => x.id === id ? { ...x, isFeatured: !current } : x)
-      )
+      setProducts((p) =>
+        p.map((x) => (x.id === id ? { ...x, isFeatured: !current } : x))
+      );
     } else {
-      alert("อัปเดตสถานะสินค้าไม่สำเร็จ")
+      alert("อัปเดตสถานะสินค้าไม่สำเร็จ");
     }
-    setLoadingId(null)
-  }
+    setLoadingId(null);
+  };
 
   const remove = async (id: string) => {
-    if (!confirm("ลบสินค้านี้หรือไม่?")) return
-    const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
+    if (!confirm("ลบสินค้านี้หรือไม่?")) return;
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
     if (res.status === 204) {
-      setProducts(p => p.filter(x => x.id !== id))
+      setProducts((p) => p.filter((x) => x.id !== id));
     } else {
-      const err = await res.json()
-      alert("Error: " + (err.error || "ไม่สามารถลบได้"))
+      const err = await res.json();
+      alert("Error: " + (err.error || "ไม่สามารถลบได้"));
     }
-  }
+  };
 
   const openEditModal = (product: Product) => {
-    setEditProduct(product)
+    setEditProduct(product);
     setEditForm({
       name: product.name,
       description: product.description || "",
       price: product.price.toString(),
       salePrice: product.salePrice?.toString() || "",
       stock: product.stock.toString(),
-      categoryId: product.categoryId || "",  // กำหนดค่าเริ่มต้น
-    })
-    setEditFile(null)
-  }
+      categoryId: product.categoryId || "", // กำหนดค่าเริ่มต้น
+    });
+    setEditFile(null);
+  };
 
   const closeEditModal = () => {
-    setEditProduct(null)
-    setEditFile(null)
-  }
+    setEditProduct(null);
+    setEditFile(null);
+  };
 
   const handleEditChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value, files } = e.target as any
+    const { name, value, files } = e.target as any;
     if (name === "image" && files) {
-      setEditFile(files[0])
+      setEditFile(files[0]);
     } else {
-      setEditForm(f => ({ ...f, [name]: value }))
+      setEditForm((f) => ({ ...f, [name]: value }));
     }
-  }
+  };
 
   const handleEditSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!editProduct) return
+    e.preventDefault();
+    if (!editProduct) return;
 
-    const fd = new FormData()
-    fd.append("name", editForm.name)
-    fd.append("description", editForm.description)
-    fd.append("price", editForm.price)
-    fd.append("salePrice", editForm.salePrice)
-    fd.append("stock", editForm.stock)
-    fd.append("categoryId", editForm.categoryId)   // ส่ง id ที่เลือกมา
-    if (editFile) fd.append("image", editFile)
+    const fd = new FormData();
+    fd.append("name", editForm.name);
+    fd.append("description", editForm.description);
+    fd.append("price", editForm.price);
+    fd.append("salePrice", editForm.salePrice);
+    fd.append("stock", editForm.stock);
+    fd.append("categoryId", editForm.categoryId); // ส่ง id ที่เลือกมา
+    if (editFile) fd.append("image", editFile);
 
     const res = await fetch(`/api/products/${editProduct.id}`, {
       method: "PUT",
       body: fd,
-    })
+    });
     if (res.ok) {
-      const updated: Product = await res.json()
-      setProducts(p =>
-        p.map(item => item.id === updated.id ? updated : item)
-      )
-      closeEditModal()
+      const updated: Product = await res.json();
+      setProducts((p) =>
+        p.map((item) => (item.id === updated.id ? updated : item))
+      );
+      closeEditModal();
     } else {
-      const err = await res.json()
-      alert("Error: " + (err.error || "แก้ไขสินค้าไม่สำเร็จ"))
+      const err = await res.json();
+      alert("Error: " + (err.error || "แก้ไขสินค้าไม่สำเร็จ"));
     }
-  }
+  };
 
-  if (loading) return <p>กำลังโหลดสินค้า...</p>
+  if (loading) return <p>กำลังโหลดสินค้า...</p>;
 
   return (
     <div>
@@ -501,7 +506,7 @@ function ManageProductSection() {
                   className="w-full border rounded p-2 mt-1"
                 >
                   <option value="">-- เลือกหมวดหมู่ --</option>
-                  {categories.map(c => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -528,9 +533,8 @@ function ManageProductSection() {
         </div>
       )}
     </div>
-  )
+  );
 }
-
 
 // --- Manage Category Section ---
 function ManageCategorySection() {
