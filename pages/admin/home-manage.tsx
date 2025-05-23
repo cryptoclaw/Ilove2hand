@@ -27,6 +27,7 @@ interface Product {
   stock: number;
   categoryId?: string;
   imageUrl?: string | null;
+  isFeatured: boolean;
 }
 
 export default function HomeManagePage() {
@@ -221,9 +222,11 @@ function CreateProductSection() {
 }
 
 // --- Manage Product Section ---
+
 function ManageProductSection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   // สำหรับ popup แก้ไข
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -244,6 +247,23 @@ function ManageProductSection() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const toggleFeatured = async (id: string, current: boolean) => {
+    setLoadingId(id);
+    const res = await fetch(`/api/products/${id}/feature`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isFeatured: !current }),
+    });
+    if (res.ok) {
+      setProducts((p) =>
+        p.map((x) => (x.id === id ? { ...x, isFeatured: !current } : x))
+      );
+    } else {
+      alert("อัปเดตสถานะสินค้าไม่สำเร็จ");
+    }
+    setLoadingId(null);
+  };
 
   const remove = async (id: string) => {
     if (!confirm("ลบสินค้านี้หรือไม่?")) return;
@@ -329,36 +349,23 @@ function ManageProductSection() {
         <table className="w-full table-auto border-collapse border border-gray-200 rounded shadow bg-white">
           <thead>
             <tr className="bg-gray-100 text-left text-gray-700">
-              <th className="border border-gray-300 px-6 py-3 w-12">#</th>
-              <th className="border border-gray-300 px-6 py-3">Name</th>
-              <th className="border border-gray-300 px-6 py-3">รายละเอียด</th>
-              <th className="border border-gray-300 px-6 py-3">ราคา</th>
-              <th className="border border-gray-300 px-6 py-3">Stock</th>{" "}
-              {/* เพิ่มคอลัมน์ Stock */}
-              <th className="border border-gray-300 px-6 py-3 w-40 text-center">
-                รูปสินค้า
-              </th>
-              <th className="border border-gray-300 px-6 py-3 w-32 text-center">
-                การจัดการ
-              </th>
+              <th className="border px-6 py-3 w-12">#</th>
+              <th className="border px-6 py-3">Name</th>
+              <th className="border px-6 py-3">รายละเอียด</th>
+              <th className="border px-6 py-3">ราคา</th>
+              <th className="border px-6 py-3">Stock</th>
+              <th className="border px-6 py-3 text-center">แนะนำ</th>
+              <th className="border px-6 py-3 text-center">รูปสินค้า</th>
+              <th className="border px-6 py-3 text-center">จัดการ</th>
             </tr>
           </thead>
           <tbody>
             {products.map((p, i) => (
-              <tr
-                key={p.id}
-                className="border border-gray-300 hover:bg-gray-50"
-              >
-                <td className="border border-gray-300 px-6 py-3 font-semibold">
-                  {i + 1}
-                </td>
-                <td className="border border-gray-300 px-6 py-3 font-semibold">
-                  {p.name}
-                </td>
-                <td className="border border-gray-300 px-6 py-3">
-                  {p.description || "-"}
-                </td>
-                <td className="border border-gray-300 px-6 py-3 font-semibold">
+              <tr key={p.id} className="border hover:bg-gray-50">
+                <td className="border px-6 py-3">{i + 1}</td>
+                <td className="border px-6 py-3">{p.name}</td>
+                <td className="border px-6 py-3">{p.description || "-"}</td>
+                <td className="border px-6 py-3">
                   {p.salePrice != null ? (
                     <>
                       <span className="line-through text-gray-400 mr-2">
@@ -372,16 +379,23 @@ function ManageProductSection() {
                     <span className="text-green-600">฿{p.price}</span>
                   )}
                 </td>
-                <td className="border border-gray-300 px-6 py-3">{p.stock}</td>{" "}
-                {/* แสดง stock */}
-                <td className="border border-gray-300 px-6 py-3 text-center">
+                <td className="border px-6 py-3">{p.stock}</td>
+                <td className="border px-6 py-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={p.isFeatured}
+                    disabled={loadingId === p.id}
+                    onChange={() => toggleFeatured(p.id, p.isFeatured)}
+                  />
+                </td>
+                <td className="border px-6 py-3 text-center">
                   <img
                     src={p.imageUrl || "/images/placeholder.png"}
                     alt={p.name}
                     className="h-12 w-12 object-cover rounded"
                   />
                 </td>
-                <td className="border border-gray-300 px-6 py-3 text-center">
+                <td className="border px-6 py-3 text-center">
                   <div className="flex items-center justify-center space-x-4">
                     <button
                       onClick={() => openEditModal(p)}

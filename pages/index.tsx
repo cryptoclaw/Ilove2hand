@@ -23,7 +23,7 @@ export default function HomePage({
   onSale,
   categories,
 }: HomeProps) {
-  // Hero banner (ใช้ 3 แรกจาก featured)
+  // Hero banner
   const heroSlides: BannerSlide[] = banners;
 
   // Promotion banner จากสินค้า on sale
@@ -50,7 +50,7 @@ export default function HomePage({
         <DiscountCarousel items={onSale} />
       </section>
 
-      {/* Promotion Banner */}
+      {/* Promotion Sub-Banner */}
       <section className="py-8 px-4">
         <SubBanner />
       </section>
@@ -79,9 +79,10 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     img: b.imageUrl,
   }));
 
-  // 2. ดึง featured products
+  // 2. ดึง featured products (เฉพาะที่ isFeatured = true)
   const rawFeatured = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
+    where: { isFeatured: true },
+    orderBy: { updatedAt: "desc" },
     take: 6,
   });
   const featured: Product[] = rawFeatured.map((p) => ({
@@ -92,6 +93,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     imageUrl: p.imageUrl,
     stock: p.stock,
     salePrice: p.salePrice ?? null,
+    isFeatured: p.isFeatured,
   }));
 
   // 3. ดึง onSale products
@@ -108,6 +110,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     imageUrl: p.imageUrl,
     stock: p.stock,
     salePrice: p.salePrice!,
+    isFeatured: p.isFeatured,
   }));
 
   // 4. ดึง categories
