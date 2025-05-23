@@ -23,6 +23,7 @@ interface Order {
   recipient: string;
   line1: string;
   line2?: string | null;
+  line3?: string | null; // เพิ่ม field line3
   city: string;
   postalCode?: string | null;
   country?: string | null;
@@ -89,7 +90,9 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
               <div className="flex justify-between mb-2">
                 <div>
                   <strong>ผู้รับ:</strong> {order.recipient} <br />
-                  <strong>ที่อยู่:</strong> {order.line1} {order.line2}{" "}
+                  <strong>ที่อยู่:</strong> {order.line1}{" "}
+                  {order.line2 && order.line2 + " "}
+                  {order.line3 && order.line3 + " "}
                   {order.city} {order.postalCode} {order.country}
                 </div>
                 <div className="flex items-center space-x-2">
@@ -173,6 +176,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) =>
       recipient: o.recipient,
       line1: o.line1,
       line2: o.line2,
+      line3: o.line3, // แม็ปค่าจาก DB มาใช้
       city: o.city,
       postalCode: o.postalCode,
       country: o.country,

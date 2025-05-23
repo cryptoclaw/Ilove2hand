@@ -1,3 +1,4 @@
+// pages/api/orders/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import { getUserFromToken } from "@/lib/auth";
@@ -43,6 +44,7 @@ export default async function handler(
       const recipient = getFirst(fields.recipient);
       const line1 = getFirst(fields.line1);
       const line2 = fields.line2 ? getFirst(fields.line2) : null;
+      const line3 = fields.line3 ? getFirst(fields.line3) : null; // เพิ่ม line3
       const city = getFirst(fields.city);
       const postalCode = fields.postalCode ? getFirst(fields.postalCode) : null;
       const country = getFirst(fields.country);
@@ -141,6 +143,7 @@ export default async function handler(
             recipient,
             line1,
             line2,
+            line3, // เก็บ line3 ลง DB
             city,
             postalCode,
             country,

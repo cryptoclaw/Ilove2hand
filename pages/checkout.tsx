@@ -24,7 +24,7 @@ interface CartItem {
     price: number;
     salePrice?: number | null;
     imageUrl?: string | null;
-    stock: number; // เพิ่ม stock เข้ามาใน type
+    stock: number;
   };
 }
 
@@ -38,6 +38,7 @@ type AddressPayload = {
   recipient: string;
   line1: string;
   line2: string;
+  line3: string; // เพิ่ม field line3
   city: string;
   postalCode: string;
   country: string;
@@ -57,6 +58,7 @@ export default function CheckoutPage() {
     recipient: "",
     line1: "",
     line2: "",
+    line3: "", // กำหนดค่าเริ่มต้น
     city: "",
     postalCode: "",
     country: "",
@@ -98,12 +100,10 @@ export default function CheckoutPage() {
       return;
     }
 
-    // อัพเดตจำนวนใน state
     setItems((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, quantity: newQuantity } : i))
     );
 
-    // เรียก API อัพเดตจำนวนในตะกร้าบน server
     await fetch(`/api/cart/${itemId}`, {
       method: "PATCH",
       headers: {
@@ -282,6 +282,23 @@ export default function CheckoutPage() {
                   <p className="text-gray-600">
                     {unit} ฿ × {item.quantity}
                   </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="px-2 py-1 border rounded"
+                    >
+                      -
+                    </button>
+                    <span>{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="px-2 py-1 border rounded"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <div className="font-semibold">{unit * item.quantity} ฿</div>
               </div>
@@ -348,6 +365,13 @@ export default function CheckoutPage() {
             onChange={(e) => setAddress({ ...address, line2: e.target.value })}
             className="w-full border p-2 rounded"
           />
+          <input
+            type="text"
+            placeholder="แขวง / เขต หรือ บรรทัดที่ 3"
+            value={address.line3}
+            onChange={(e) => setAddress({ ...address, line3: e.target.value })}
+            className="w-full border p-2 rounded"
+          />
           <div className="flex gap-2">
             <ProvinceSelect
               value={address.city}
@@ -374,7 +398,7 @@ export default function CheckoutPage() {
           />
         </div>
 
-        {/* วิธีชำระเงิน */}
+        {/* วิธีการชำระเงิน */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-2">วิธีการชำระเงิน</h2>
           <select
@@ -443,7 +467,6 @@ export default function CheckoutPage() {
               type="button"
               onClick={async () => {
                 setLoading(true);
-                // เรียกสร้าง order แบบเดียวกับ bank transfer แต่ paymentMethod จะเป็น "cod"
                 const res = await (async () => {
                   const orderItems = items.map((item) => ({
                     productId: item.product.id,
@@ -459,7 +482,6 @@ export default function CheckoutPage() {
                   formData.append("paymentMethod", "cod");
                   if (couponCode.trim())
                     formData.append("couponCode", couponCode.trim());
-                  // no slipFile for COD
                   return fetch("/api/orders", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
