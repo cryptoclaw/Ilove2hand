@@ -163,7 +163,7 @@ export default function CheckoutPage() {
     if (couponCode.trim()) formData.append("couponCode", couponCode.trim());
     if (slipFile) formData.append("slipFile", slipFile, slipFile.name);
 
-    return await fetch("/api/orders", {
+    return await fetch("/api/admin/orders", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
@@ -219,7 +219,7 @@ export default function CheckoutPage() {
         return;
       }
       if (paymentIntent?.status === "succeeded") {
-        const res = await fetch("/api/orders", {
+        const res = await fetch("/api/admin/orders", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -482,7 +482,7 @@ export default function CheckoutPage() {
                   formData.append("paymentMethod", "cod");
                   if (couponCode.trim())
                     formData.append("couponCode", couponCode.trim());
-                  return fetch("/api/orders", {
+                  return fetch("/api/admin/orders", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
