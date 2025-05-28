@@ -184,6 +184,7 @@ export default function CheckoutPage() {
     const stripe = useStripe();
     const elements = useElements();
     const [processing, setProcessing] = useState(false);
+    const [cardholder, setCardholder] = useState("");
 
     const onSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -210,6 +211,7 @@ export default function CheckoutPage() {
         {
           payment_method: {
             card: elements.getElement(CardElement)!,
+            billing_details: { name: cardholder },
           },
         }
       );
@@ -245,14 +247,26 @@ export default function CheckoutPage() {
 
     return (
       <form onSubmit={onSubmit} className="space-y-6">
-        <CardElement className="border p-2 rounded" />
-        <button
-          type="submit"
-          disabled={!stripe || processing}
-          className="px-6 py-3 bg-blue-600 text-white rounded disabled:opacity-50"
-        >
-          {processing ? "Processing..." : `Pay ${total} ฿`}
-        </button>
+        <div>
+          <input
+            type="text"
+            placeholder="ชื่อผู้ถือบัตร (Cardholder Name)"
+            value={cardholder}
+            onChange={(e) => setCardholder(e.target.value)}
+            className="border p-2 rounded w-full mb-3"
+            required
+          />
+          <CardElement className="border p-2 rounded w-full" />
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={!stripe || processing}
+            className="px-6 py-3 bg-blue-600 text-white rounded disabled:opacity-50"
+          >
+            {processing ? "Processing..." : `Pay ${total} ฿`}
+          </button>
+        </div>
       </form>
     );
   };
@@ -427,24 +441,26 @@ export default function CheckoutPage() {
                   className="w-56 h-56 object-contain"
                 />
               </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  setLoading(true);
-                  const res = await createBankTransferOrder();
-                  setLoading(false);
-                  if (res.ok) {
-                    router.push("/success");
-                  } else {
-                    const err = await res.json();
-                    alert("Error: " + err.error);
-                  }
-                }}
-                disabled={loading}
-                className="px-6 py-3 bg-green-600 text-white rounded disabled:opacity-50 mt-4"
-              >
-                {loading ? "Processing..." : "ยืนยันโอนผ่านธนาคาร"}
-              </button>
+              <div className="flex justify-end mt-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoading(true);
+                    const res = await createBankTransferOrder();
+                    setLoading(false);
+                    if (res.ok) {
+                      router.push("/success");
+                    } else {
+                      const err = await res.json();
+                      alert("Error: " + err.error);
+                    }
+                  }}
+                  disabled={loading}
+                  className="px-6 py-3 bg-green-600 text-white rounded disabled:opacity-50"
+                >
+                  {loading ? "Processing..." : "ยืนยันโอนผ่านธนาคาร"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -463,44 +479,46 @@ export default function CheckoutPage() {
           )}
 
           {paymentMethod === "cod" && (
-            <button
-              type="button"
-              onClick={async () => {
-                setLoading(true);
-                const res = await (async () => {
-                  const orderItems = items.map((item) => ({
-                    productId: item.product.id,
-                    quantity: item.quantity,
-                    priceAtPurchase:
-                      item.product.salePrice ?? item.product.price,
-                  }));
-                  const formData = new FormData();
-                  formData.append("items", JSON.stringify(orderItems));
-                  Object.entries(address).forEach(([k, v]) =>
-                    formData.append(k, v)
-                  );
-                  formData.append("paymentMethod", "cod");
-                  if (couponCode.trim())
-                    formData.append("couponCode", couponCode.trim());
-                  return fetch("/api/admin/orders", {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: formData,
-                  });
-                })();
-                setLoading(false);
-                if (res.ok) {
-                  router.push("/success");
-                } else {
-                  const err = await res.json();
-                  alert("Error: " + err.error);
-                }
-              }}
-              disabled={loading}
-              className="px-6 py-3 bg-yellow-500 text-white rounded disabled:opacity-50"
-            >
-              {loading ? "Processing..." : "ยืนยันเก็บเงินปลายทาง"}
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  const res = await (async () => {
+                    const orderItems = items.map((item) => ({
+                      productId: item.product.id,
+                      quantity: item.quantity,
+                      priceAtPurchase:
+                        item.product.salePrice ?? item.product.price,
+                    }));
+                    const formData = new FormData();
+                    formData.append("items", JSON.stringify(orderItems));
+                    Object.entries(address).forEach(([k, v]) =>
+                      formData.append(k, v)
+                    );
+                    formData.append("paymentMethod", "cod");
+                    if (couponCode.trim())
+                      formData.append("couponCode", couponCode.trim());
+                    return fetch("/api/admin/orders", {
+                      method: "POST",
+                      headers: { Authorization: `Bearer ${token}` },
+                      body: formData,
+                    });
+                  })();
+                  setLoading(false);
+                  if (res.ok) {
+                    router.push("/success");
+                  } else {
+                    const err = await res.json();
+                    alert("Error: " + err.error);
+                  }
+                }}
+                disabled={loading}
+                className="px-6 py-3 bg-yellow-500 text-white rounded disabled:opacity-50"
+              >
+                {loading ? "Processing..." : "ยืนยันเก็บเงินปลายทาง"}
+              </button>
+            </div>
           )}
         </div>
       </form>
