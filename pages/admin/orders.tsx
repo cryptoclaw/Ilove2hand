@@ -45,7 +45,7 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
 
   // ฟังก์ชันเปลี่ยนสถานะออเดอร์
   const updateStatus = async (orderId: string, newStatus: string) => {
-    const res = await fetch(`/api/orders/${orderId}`, {
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
       method: "PATCH",
       credentials: "include", // ← ให้ส่ง cookie ไปด้วย
       headers: { "Content-Type": "application/json" },
@@ -63,7 +63,7 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
   // ฟังก์ชันลบคำสั่งซื้อ
   const deleteOrder = async (orderId: string) => {
     if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบคำสั่งซื้อนี้?")) return;
-    const res = await fetch(`/api/orders/${orderId}`, {
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
       method: "DELETE",
       credentials: "include", // ← ส่ง cookie ไปด้วย
     });

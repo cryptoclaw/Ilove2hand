@@ -83,10 +83,7 @@ export default function Navbar() {
 
           {/* 3. Icons & Auth Buttons */}
           <div className="flex items-center space-x-4">
-            <Link
-              href="/favorites"
-              className="text-gray-600 hover:text-green-600"
-            >
+            <Link href="/orders" className="text-gray-600 hover:text-green-600">
               <Heart size={24} />
             </Link>
             <Link href="/cart" className="text-gray-600 hover:text-green-600">
