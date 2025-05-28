@@ -106,6 +106,7 @@ export const getServerSideProps: GetServerSideProps<AllProductsProps> = async ({
     stock: p.stock,
     salePrice: p.salePrice ?? null,
     categoryId: p.categoryId ?? "",
+    isFeatured: p.isFeatured ?? false,
   }));
 
   return {

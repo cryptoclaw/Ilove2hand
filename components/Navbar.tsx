@@ -6,8 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Heart, ShoppingCart, Menu, X } from "lucide-react";
-
+import { Truck, ShoppingCart, Menu, X } from "lucide-react";
 export default function Navbar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
@@ -48,7 +47,7 @@ export default function Navbar() {
           {/* Mobile: Orders & Cart Icons directly on bar */}
           <div className="flex items-center space-x-4 md:hidden">
             <Link href="/orders" aria-label="Orders">
-              <Heart
+              <Truck
                 size={24}
                 className="text-gray-600 hover:text-green-600 transition"
               />
@@ -112,7 +111,7 @@ export default function Navbar() {
               href="/orders"
               className="text-gray-600 hover:text-green-600 transition"
             >
-              <Heart size={24} />
+              <Truck size={24} />
             </Link>
             <Link
               href="/cart"

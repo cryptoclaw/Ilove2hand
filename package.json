@@ -43,6 +43,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/react": "19.1.4",
     "@types/react-dom": "^19.1.5",
+    "@types/recharts": "^2.0.1",
     "@types/stripe": "^8.0.416",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
