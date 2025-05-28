@@ -35,7 +35,7 @@ export default function Banner({ slides, isPromotion = false }: BannerProps) {
   const next = () => setIdx((i) => (i + 1) % total);
 
   return (
-    <div className="relative w-full h-64 md:h-96 overflow-hidden rounded-3xl mb-6">
+    <div className="relative w-full h-40 sm:h-64 md:h-80 lg:h-96 overflow-hidden rounded-3xl mb-6">
       {/* รูปพื้นหลัง */}
       <Image
         src={slides[idx].img}
@@ -45,10 +45,14 @@ export default function Banner({ slides, isPromotion = false }: BannerProps) {
       />
 
       {/* Overlay กราดิเอนต์ + ข้อความ */}
-      <div className="absolute inset-0 flex items-center py-8 px-20 bg-black/30">
+      <div className="absolute inset-0 flex items-center py-6 px-4 sm:px-8 md:px-16 bg-black/30">
         <div className="text-white max-w-lg">
-          <p className="uppercase text-sm mb-2">{slides[idx].sub}</p>
-          <h2 className={`font-bold ${isPromotion ? "text-2xl" : "text-3xl"}`}>
+          <p className="uppercase text-xs sm:text-sm mb-2">{slides[idx].sub}</p>
+          <h2
+            className={`font-bold ${
+              isPromotion ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
+            }`}
+          >
             {slides[idx].title}
           </h2>
         </div>
@@ -57,15 +61,15 @@ export default function Banner({ slides, isPromotion = false }: BannerProps) {
       {/* Prev / Next buttons */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white border-2 border-green-200 p-3 rounded-full shadow-lg hover:bg-white transition z-10"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white border-2 border-green-200 p-2 sm:p-3 rounded-full shadow-lg z-10"
       >
-        <ChevronLeft size={24} className="text-green-600" />
+        <ChevronLeft size={20} className="text-green-600" />
       </button>
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white border-2 border-green-200 p-3 rounded-full shadow-lg hover:bg-white transition z-10"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white border-2 border-green-200 p-2 sm:p-3 rounded-full shadow-lg z-10"
       >
-        <ChevronRight size={24} className="text-green-600" />
+        <ChevronRight size={20} className="text-green-600" />
       </button>
 
       {/* Dots indicator */}

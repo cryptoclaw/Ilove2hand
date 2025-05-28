@@ -36,29 +36,29 @@ export default function HomePage({
   return (
     <Layout>
       {/* Hero Banner */}
-      <section className="py-8 px-4">
+      <section className="container py-8">
         <Banner slides={heroSlides} />
       </section>
 
       {/* Category Carousel */}
-      <section className="px-4">
+      <section className="container">
         <CategoryCarousel categories={categories} />
       </section>
 
       {/* On Sale Carousel */}
-      <section className="py-8 px-4">
+      <section className="container py-8">
         <DiscountCarousel items={onSale} />
       </section>
 
       {/* Promotion Sub-Banner */}
-      <section className="py-8 px-4">
+      <section className="container py-8">
         <SubBanner />
       </section>
 
       {/* Featured Products */}
-      <section className="py-8 px-4">
+      <section className="container py-8">
         <h2 className="text-xl font-semibold mb-4">สินค้าแนะนำ</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {featured.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
