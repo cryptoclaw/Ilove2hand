@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Truck, ShoppingCart } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -84,7 +84,7 @@ export default function Navbar() {
           {/* 3. Icons & Auth Buttons */}
           <div className="flex items-center space-x-4">
             <Link href="/orders" className="text-gray-600 hover:text-green-600">
-              <Heart size={24} />
+              <Truck size={24} />
             </Link>
             <Link href="/cart" className="text-gray-600 hover:text-green-600">
               <ShoppingCart size={24} />
