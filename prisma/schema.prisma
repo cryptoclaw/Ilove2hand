@@ -144,6 +144,7 @@ model Faq {
 model Banner {
   id        String   @id @default(uuid())
   title     String?
+  description String?
   sub       String?
   imageUrl  String
   order     Int      @default(0)

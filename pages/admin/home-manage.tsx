@@ -19,6 +19,7 @@ interface Banner {
   imageUrl: string;
   order: number;
   position: string;
+  description: string | null;
 }
 
 interface Product {
@@ -683,18 +684,19 @@ export function ManageBannerSection() {
   const [form, setForm] = useState<{
     title: string;
     sub: string;
+    description: string;
     order: number;
     position: string;
-  }>({ title: "", sub: "", order: 0, position: "hero" });
+  }>({ title: "", sub: "", description: "", order: 0, position: "hero" });
 
-  // สเตทสำหรับแก้ไข
   const [editBanner, setEditBanner] = useState<Banner | null>(null);
   const [editForm, setEditForm] = useState<{
     title: string;
     sub: string;
+    description: string;
     order: number;
     position: string;
-  }>({ title: "", sub: "", order: 0, position: "hero" });
+  }>({ title: "", sub: "", description: "", order: 0, position: "hero" });
   const [editFile, setEditFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -704,14 +706,18 @@ export function ManageBannerSection() {
       .catch(console.error);
   }, []);
 
-  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const onChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, files } = e.target as any;
-    if (name === "image" && files) setFile(files[0]);
-    else
+    if (name === "image" && files) {
+      setFile(files[0]);
+    } else {
       setForm((f) => ({
         ...f,
         [name]: name === "order" ? Number(value) : value,
       }));
+    }
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -721,6 +727,7 @@ export function ManageBannerSection() {
     const fd = new FormData();
     if (form.title.trim()) fd.append("title", form.title);
     if (form.sub.trim()) fd.append("sub", form.sub);
+    if (form.description.trim()) fd.append("description", form.description);
     fd.append("order", String(form.order));
     fd.append("position", form.position);
     fd.append("image", file);
@@ -729,14 +736,19 @@ export function ManageBannerSection() {
     if (res.ok) {
       const newBanner: Banner = await res.json();
       setItems((prev) => [...prev, newBanner]);
-      setForm({ title: "", sub: "", order: 0, position: "hero" });
+      setForm({
+        title: "",
+        sub: "",
+        description: "",
+        order: 0,
+        position: "hero",
+      });
       setFile(null);
     } else {
       alert("Error creating banner");
     }
   };
 
-  // ลบ
   const onDelete = async (id: string) => {
     if (!confirm("ต้องการลบแบนเนอร์นี้หรือไม่?")) return;
     const res = await fetch(`/api/banners/${id}`, { method: "DELETE" });
@@ -747,21 +759,22 @@ export function ManageBannerSection() {
     }
   };
 
-  // เปิด modal แก้ไข
   const openEditModal = (b: Banner) => {
     setEditBanner(b);
     setEditForm({
       title: b.title || "",
       sub: b.sub || "",
+      description: b.description || "",
       order: b.order,
       position: b.position,
     });
     setEditFile(null);
   };
+
   const closeEditModal = () => setEditBanner(null);
 
   const handleEditChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) {
@@ -781,6 +794,7 @@ export function ManageBannerSection() {
     const fd = new FormData();
     fd.append("title", editForm.title);
     fd.append("sub", editForm.sub);
+    fd.append("description", editForm.description);
     fd.append("order", String(editForm.order));
     fd.append("position", editForm.position);
     if (editFile) fd.append("image", editFile);
@@ -804,7 +818,6 @@ export function ManageBannerSection() {
     <div>
       <h2 className="text-2xl font-semibold mb-4">จัดการแบนเนอร์</h2>
 
-      {/* ฟอร์มสร้างใหม่ */}
       <form onSubmit={onSubmit} className="space-y-5 mb-6 max-w-xl">
         <input
           name="title"
@@ -819,6 +832,13 @@ export function ManageBannerSection() {
           onChange={onChange}
           placeholder="Sub (ไม่บังคับ)"
           className="w-full border rounded p-3"
+        />
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={onChange}
+          placeholder="Description (ไม่บังคับ)"
+          className="w-full border rounded p-3 h-24"
         />
         <input
           name="order"
@@ -855,12 +875,13 @@ export function ManageBannerSection() {
         </button>
       </form>
 
-      {/* ตารางรายการ */}
       <table className="w-full table-auto border-collapse border border-gray-200 bg-white rounded shadow-md">
         <thead>
           <tr className="bg-gray-100 text-left">
             <th className="border px-4 py-3 w-12">#</th>
             <th className="border px-4 py-3">Title</th>
+            <th className="border px-4 py-3">Sub</th>
+            <th className="border px-4 py-3">Description</th>
             <th className="border px-4 py-3">Banner</th>
             <th className="border px-4 py-3">Position</th>
             <th className="border px-4 py-3 w-40 text-center">การจัดการ</th>
@@ -871,6 +892,8 @@ export function ManageBannerSection() {
             <tr key={b.id} className="border hover:bg-gray-50">
               <td className="border px-4 py-4">{i + 1}</td>
               <td className="border px-4 py-4">{b.title || "-"}</td>
+              <td className="border px-4 py-4">{b.sub || "-"}</td>
+              <td className="border px-4 py-4">{b.description || "-"}</td>
               <td className="border px-4 py-2">
                 <img
                   src={b.imageUrl}
@@ -898,7 +921,6 @@ export function ManageBannerSection() {
         </tbody>
       </table>
 
-      {/* Popup แก้ไข */}
       {editBanner && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-auto p-6">
@@ -920,6 +942,15 @@ export function ManageBannerSection() {
                   value={editForm.sub}
                   onChange={handleEditChange}
                   className="w-full border rounded p-2 mt-1"
+                />
+              </label>
+              <label className="block">
+                Description:
+                <textarea
+                  name="description"
+                  value={editForm.description}
+                  onChange={handleEditChange}
+                  className="w-full border rounded p-2 mt-1 h-24"
                 />
               </label>
               <label className="block">

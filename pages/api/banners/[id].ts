@@ -73,13 +73,13 @@ export default async function handler(
       const sub = fields.sub?.trim() || null;
       const order = parseInt(fields.order || "0", 10);
       const position = fields.position?.trim() || null;
-
+      const description = fields.description?.trim();
       // เตรียม object สำหรับอัปเดต
       const data: any = { order };
-      if (title !== null) data.title = title;
-      if (sub !== null) data.sub = sub;
+      if (fields.hasOwnProperty("title")) data.title = title;
+      if (fields.hasOwnProperty("sub")) data.sub = sub;
       if (position !== null) data.position = position;
-
+      if (description !== null) data.description = description;
       // ถ้ามีรูปใหม่ อัปเดต imageUrl
       if (files.image) {
         const file = Array.isArray(files.image) ? files.image[0] : files.image;

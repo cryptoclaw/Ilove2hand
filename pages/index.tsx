@@ -31,7 +31,7 @@ export default function HomePage({
   return (
     <Layout>
       {/* Hero Banner */}
-      <section className="container py-8">
+      <section className="mt-16 container py-8">
         <Banner slides={heroSlides} />
       </section>
 

@@ -45,7 +45,7 @@ export default function Banner({ slides, isPromotion = false }: BannerProps) {
       />
 
       {/* Overlay กราดิเอนต์ + ข้อความ */}
-      <div className="absolute inset-0 flex items-center py-6 px-4 sm:px-8 md:px-16 bg-black/30">
+      <div>
         <div className="text-white max-w-lg">
           <p className="uppercase text-xs sm:text-sm mb-2">{slides[idx].sub}</p>
           <h2

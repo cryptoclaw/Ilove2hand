@@ -53,9 +53,10 @@ export default async function handler(
   if (req.method === "POST") {
     // POST /api/banners → สร้าง banner ใหม่
     const file = (req as any).file as Express.Multer.File | undefined;
-    const { title, sub, order, position } = req.body as {
+    const { title, sub, description, order, position } = req.body as {
       title?: string;
       sub?: string;
+      description?: string;
       order?: string;
       position?: string;
     };
@@ -73,6 +74,7 @@ export default async function handler(
         data: {
           title: title?.trim() || null,
           sub: sub?.trim() || null,
+          description: description?.trim() || null, // ← added
           imageUrl,
           order: orderNum,
           position: positionValue,
