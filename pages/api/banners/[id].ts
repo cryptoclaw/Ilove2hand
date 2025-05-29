@@ -18,7 +18,7 @@ type Parsed = {
 
 const parseForm = (req: NextApiRequest): Promise<Parsed> =>
   new Promise((resolve, reject) => {
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "banners");
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -35,7 +35,7 @@ const parseForm = (req: NextApiRequest): Promise<Parsed> =>
       const flds: Record<string, string> = {};
       for (const key in fields) {
         const val = fields[key];
-        flds[key] = Array.isArray(val) ? (val[0] ?? "") : (val ?? "");
+        flds[key] = Array.isArray(val) ? val[0] ?? "" : val ?? "";
       }
       // Normalize files: ensure each value is a single File, not File[]
       const normalizedFiles: Record<string, File> = {};
@@ -57,36 +57,35 @@ export default async function handler(
 ) {
   const rawId = req.query.id;
   const id =
-    typeof rawId === "string"
-      ? rawId
-      : Array.isArray(rawId)
-      ? rawId[0]
-      : null;
+    typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] : null;
 
   if (!id) {
     return res.status(400).json({ error: "Invalid banner id" });
   }
 
-  // PUT: อัปเดตแบนเนอร์ (รองรับรูปใหม่ด้วย)
+  // PUT: อัปเดตแบนเนอร์ (รองรับรูปใหม่และ position ด้วย)
   if (req.method === "PUT") {
     try {
       const { fields, files } = await parseForm(req);
 
-      // แปลงค่า fields
+      // แปลงค่า fields (รวม position)
       const title = fields.title?.trim() || null;
       const sub = fields.sub?.trim() || null;
       const order = parseInt(fields.order || "0", 10);
+      const position = fields.position?.trim() || null;
 
+      // เตรียม object สำหรับอัปเดต
       const data: any = { order };
       if (title !== null) data.title = title;
       if (sub !== null) data.sub = sub;
+      if (position !== null) data.position = position;
 
       // ถ้ามีรูปใหม่ อัปเดต imageUrl
       if (files.image) {
         const file = Array.isArray(files.image) ? files.image[0] : files.image;
         const tmpPath = (file.filepath || (file as any).path) as string;
         const fileName = path.basename(tmpPath);
-        data.imageUrl = `/uploads/${fileName}`;
+        data.imageUrl = `/uploads/banners/${fileName}`;
       }
 
       const updated = await prisma.banner.update({
@@ -110,9 +109,7 @@ export default async function handler(
       return res.status(204).end();
     } catch (err: any) {
       console.error("Delete banner error:", err);
-      return res
-        .status(500)
-        .json({ error: "เกิดข้อผิดพลาดในการลบแบนเนอร์" });
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการลบแบนเนอร์" });
     }
   }
 

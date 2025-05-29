@@ -18,6 +18,7 @@ interface Banner {
   sub: string | null;
   imageUrl: string;
   order: number;
+  position: string;
 }
 
 interface Product {
@@ -683,11 +684,17 @@ export function ManageBannerSection() {
     title: string;
     sub: string;
     order: number;
-  }>({ title: "", sub: "", order: 0 });
+    position: string;
+  }>({ title: "", sub: "", order: 0, position: "hero" });
 
   // สเตทสำหรับแก้ไข
   const [editBanner, setEditBanner] = useState<Banner | null>(null);
-  const [editForm, setEditForm] = useState({ title: "", sub: "", order: 0 });
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    sub: string;
+    order: number;
+    position: string;
+  }>({ title: "", sub: "", order: 0, position: "hero" });
   const [editFile, setEditFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -697,7 +704,7 @@ export function ManageBannerSection() {
       .catch(console.error);
   }, []);
 
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) setFile(files[0]);
     else
@@ -715,13 +722,14 @@ export function ManageBannerSection() {
     if (form.title.trim()) fd.append("title", form.title);
     if (form.sub.trim()) fd.append("sub", form.sub);
     fd.append("order", String(form.order));
+    fd.append("position", form.position);
     fd.append("image", file);
 
     const res = await fetch("/api/banners", { method: "POST", body: fd });
     if (res.ok) {
       const newBanner: Banner = await res.json();
       setItems((prev) => [...prev, newBanner]);
-      setForm({ title: "", sub: "", order: 0 });
+      setForm({ title: "", sub: "", order: 0, position: "hero" });
       setFile(null);
     } else {
       alert("Error creating banner");
@@ -742,12 +750,19 @@ export function ManageBannerSection() {
   // เปิด modal แก้ไข
   const openEditModal = (b: Banner) => {
     setEditBanner(b);
-    setEditForm({ title: b.title || "", sub: b.sub || "", order: b.order });
+    setEditForm({
+      title: b.title || "",
+      sub: b.sub || "",
+      order: b.order,
+      position: b.position,
+    });
     setEditFile(null);
   };
   const closeEditModal = () => setEditBanner(null);
 
-  const handleEditChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleEditChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) {
       setEditFile(files[0]);
@@ -767,6 +782,7 @@ export function ManageBannerSection() {
     fd.append("title", editForm.title);
     fd.append("sub", editForm.sub);
     fd.append("order", String(editForm.order));
+    fd.append("position", editForm.position);
     if (editFile) fd.append("image", editFile);
 
     const res = await fetch(`/api/banners/${editBanner.id}`, {
@@ -812,6 +828,18 @@ export function ManageBannerSection() {
           placeholder="Order"
           className="w-full border rounded p-3"
         />
+        <label className="block">
+          Position:
+          <select
+            name="position"
+            value={form.position}
+            onChange={onChange}
+            className="w-full border rounded p-3 mt-1"
+          >
+            <option value="hero">Hero</option>
+            <option value="sub">Sub</option>
+          </select>
+        </label>
         <input
           name="image"
           type="file"
@@ -834,6 +862,7 @@ export function ManageBannerSection() {
             <th className="border px-4 py-3 w-12">#</th>
             <th className="border px-4 py-3">Title</th>
             <th className="border px-4 py-3">Banner</th>
+            <th className="border px-4 py-3">Position</th>
             <th className="border px-4 py-3 w-40 text-center">การจัดการ</th>
           </tr>
         </thead>
@@ -849,6 +878,7 @@ export function ManageBannerSection() {
                   className="h-16 rounded object-cover"
                 />
               </td>
+              <td className="border px-4 py-4">{b.position}</td>
               <td className="border px-4 py-4 text-center space-x-4">
                 <button
                   onClick={() => openEditModal(b)}
@@ -901,6 +931,18 @@ export function ManageBannerSection() {
                   onChange={handleEditChange}
                   className="w-full border rounded p-2 mt-1"
                 />
+              </label>
+              <label className="block">
+                Position:
+                <select
+                  name="position"
+                  value={editForm.position}
+                  onChange={handleEditChange}
+                  className="w-full border rounded p-2 mt-1"
+                >
+                  <option value="hero">Hero</option>
+                  <option value="sub">Sub</option>
+                </select>
               </label>
               <label className="block">
                 รูปใหม่ (ไม่บังคับ):
