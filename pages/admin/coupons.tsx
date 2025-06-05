@@ -1,5 +1,5 @@
 // pages/admin/coupons.tsx
-import { GetServerSideProps, NextPage } from "next";
+import { GetServerSideProps, NextPage, GetServerSidePropsResult } from "next";
 import { useState, FormEvent } from "react";
 import Layout from "@/components/AdminLayout";
 import Link from "next/link";
@@ -165,9 +165,7 @@ const AdminCouponsPage: NextPage<Props> = ({ initial }) => {
             <span className="col-span-1">{c.usageLimit ?? "-"}</span>
             <span className="col-span-2">
               {c.expiresAt
-                ? new Date(c.expiresAt)
-                    // ฟอร์แมตเป็น DD/MM/YYYY ตายตัว (ไม่ขึ้นกับ locale)
-                    .toLocaleDateString("en-GB")
+                ? new Date(c.expiresAt).toLocaleDateString("en-GB")
                 : "-"}
             </span>
           </div>
@@ -179,18 +177,33 @@ const AdminCouponsPage: NextPage<Props> = ({ initial }) => {
 
 export default AdminCouponsPage;
 
-export const getServerSideProps: GetServerSideProps = async (ctx) =>
-  adminGuard(ctx, async () => {
-    const raw = await prisma.coupon.findMany({
-      /* ... */
-    });
-    const initial: Coupon[] = raw.map((c) => ({
-      id: c.id,
-      code: c.code,
-      discountType: c.discountType as "percent" | "fixed",
-      discountValue: c.discountValue,
-      usageLimit: c.usageLimit,
-      expiresAt: c.expiresAt?.toISOString() ?? null,
-    }));
-    return { props: { initial } };
+export const getServerSideProps: GetServerSideProps<Props> = async (
+  ctx
+): Promise<GetServerSidePropsResult<Props>> => {
+  const result = await adminGuard<Props>(ctx, async () => {
+    try {
+      // ตรวจสอบว่า DATABASE_URL ถูกตั้งค่า
+      if (!process.env.DATABASE_URL) {
+        throw new Error("DATABASE_URL ไม่ได้ตั้งค่า");
+      }
+
+      const raw = await prisma.coupon.findMany();
+      const initial: Coupon[] = raw.map((c) => ({
+        id: c.id,
+        code: c.code,
+        discountType: c.discountType as "percent" | "fixed",
+        discountValue: c.discountValue,
+        usageLimit: c.usageLimit,
+        expiresAt: c.expiresAt?.toISOString() ?? null,
+      }));
+
+      return { props: { initial } };
+    } catch (error) {
+      console.error("Error in getServerSideProps(/admin/coupons):", error);
+      return { notFound: true };
+    }
   });
+
+  // Type assertion เพื่อให้ตรงกับ GetServerSidePropsResult<Props>
+  return result as GetServerSidePropsResult<Props>;
+};
