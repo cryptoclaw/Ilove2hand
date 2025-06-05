@@ -18,14 +18,14 @@ export default function ContactPage() {
         {/* ช่องทาง Line */}
         <p className="mb-2">
           <span className="font-medium">ผ่านไลน์ Line ID:</span>{" "}
-          <span>@XXXXXX</span>{" "}
+          <span>@468yvjbo</span>{" "}
           <span className="text-gray-600">(เวลา 06:00 – 24:00 น.)</span>
         </p>
 
         {/* ช่องทางโทรศัพท์ */}
         <p>
           <span className="font-medium">โทรศัพท์:</span>{" "}
-          <span>0X-XXXX-XXXX</span>{" "}
+          <span>094-546-2224</span>{" "}
           <span className="text-gray-600">(เวลา 06:00 – 24:00 น.)</span>
         </p>
       </div>
