@@ -27,5 +27,3 @@ export default async function handler(
     },
   });
 }
-// pages/api/auth/profile.ts
-export {};
