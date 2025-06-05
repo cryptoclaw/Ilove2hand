@@ -1,7 +1,7 @@
 // components/DiscountCarousel.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -15,16 +15,37 @@ interface Props {
 export default function DiscountCarousel({ items }: Props) {
   const [idx, setIdx] = useState(0);
   const total = items.length;
-  const displayCount = Math.min(6, total);
   const { token } = useAuth();
   const router = useRouter();
   const [addingId, setAddingId] = useState<string | null>(null);
 
+  // เลือกจำนวนสินค้าที่จะแสดง ตามขนาดหน้าจอ
+  // ตั้งค่าเริ่มต้นเป็น 2 (mobile) แล้วอัปเดตใน useEffect
+  const [displayCount, setDisplayCount] = useState<number>(2);
+  useEffect(() => {
+    // ฟังก์ชันคำนวณจำนวนสินค้าตามความกว้างหน้าจอ
+    const updateCount = () => {
+      const w = window.innerWidth;
+      let count = 2;
+      if (w < 640) count = 2;
+      else if (w < 768) count = 3;
+      else if (w < 1024) count = 4;
+      else count = 6;
+      setDisplayCount(Math.min(count, total));
+    };
+    // รันทันทีตอน mount
+    updateCount();
+    // ฟัง resize
+    window.addEventListener("resize", updateCount);
+    return () => window.removeEventListener("resize", updateCount);
+  }, [total]);
+
   if (total === 0) return null;
 
-  const prev = () => setIdx((i) => (i - 1 + total) % total);
-  const next = () => setIdx((i) => (i + 1) % total);
+  const prev = () => setIdx((i) => (i - displayCount + total) % total);
+  const next = () => setIdx((i) => (i + displayCount) % total);
 
+  // สร้างชุดสินค้าที่จะแสดงตาม idx และ displayCount
   const visible = Array.from({ length: displayCount }, (_, i) => {
     const index = (idx + i) % total;
     return items[index];
@@ -59,29 +80,26 @@ export default function DiscountCarousel({ items }: Props) {
   };
 
   return (
-    <div className="relative rounded-2xl px-6 py-8 my-8 bg-gradient-to-r from-orange-200 via-orange-300 to-orange-400 border-2 border-orange-500">
-      <h2 className="absolute -top-3 left-8 bg-white px-2 text-lg font-semibold text-red-600 shadow-md rounded-full">
+    <div className="container relative rounded-2xl px-4 sm:px-6 lg:px-8 py-8 my-8 bg-gradient-to-r from-orange-200 via-orange-300 to-orange-400 border-2 border-orange-500">
+      <h2 className="absolute -top-4 left-4 sm:-top-3 sm:left-8 bg-white px-2 text-sm sm:text-lg font-semibold text-red-600 shadow-md rounded-full">
         สินค้าลดราคา
       </h2>
 
-      {/* ปุ่มเลื่อนซ้าย */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow hover:bg-white transition z-20"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white p-2 sm:p-3 rounded-full shadow hover:bg-white transition z-20"
       >
         <ChevronLeft size={20} className="text-orange-600" />
       </button>
 
-      {/* แสดงสินค้า */}
-      <div className="grid grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {visible.map((p) => (
           <div
             key={p.id}
             onClick={() => p.stock > 0 && router.push(`/products/${p.id}`)}
             className="cursor-pointer bg-white rounded-xl border shadow-sm p-4 flex flex-col items-center text-center hover:shadow-lg transition"
           >
-            {/* Image + Sold Out badge */}
-            <div className="relative w-full h-24 mb-3 rounded-lg overflow-hidden">
+            <div className="relative w-full pt-[100%] mb-3 rounded-lg overflow-hidden">
               <Image
                 src={p.imageUrl ?? "/images/placeholder.png"}
                 alt={p.name}
@@ -95,7 +113,6 @@ export default function DiscountCarousel({ items }: Props) {
               )}
             </div>
 
-            {/* Name & description */}
             <h3 className="text-gray-800 font-medium mb-1">{p.name}</h3>
             {p.description && (
               <p className="text-gray-500 text-xs mb-2 line-clamp-2">
@@ -103,7 +120,6 @@ export default function DiscountCarousel({ items }: Props) {
               </p>
             )}
 
-            {/* Price */}
             <div className="mb-3 flex items-center justify-center space-x-2">
               {p.salePrice != null && (
                 <span className="text-gray-400 line-through text-sm">
@@ -115,7 +131,6 @@ export default function DiscountCarousel({ items }: Props) {
               </span>
             </div>
 
-            {/* Add button */}
             <button
               onClick={(e) => handleAdd(e, p)}
               disabled={addingId === p.id || p.stock === 0}
@@ -131,10 +146,9 @@ export default function DiscountCarousel({ items }: Props) {
         ))}
       </div>
 
-      {/* ปุ่มเลื่อนขวา */}
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow hover:bg-white transition z-20"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white p-2 sm:p-3 rounded-full shadow hover:bg-white transition z-20"
       >
         <ChevronRight size={20} className="text-orange-600" />
       </button>

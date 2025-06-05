@@ -31,12 +31,20 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // เรียก multer middleware ก่อนเสมอ
+  // เรียก multer middleware ก่อนเสมอ (สำหรับ POST ที่มี image)
   await runMiddleware(req, res, upload.single("image"));
 
+  // อ่าน position จาก query string (เช่น ?position=hero หรือ ?position=sub)
+  const posQuery = Array.isArray(req.query.position)
+    ? req.query.position[0]
+    : req.query.position;
+
   if (req.method === "GET") {
-    // GET /api/banners → คืนรายการ banner ทั้งหมด
+    // GET /api/banners → คืนรายการ banner (กรองตาม position ถ้ามี)
+    const whereClause = posQuery ? { position: posQuery } : {}; // ถ้าไม่มี query ก็ return ทั้งหมด
+
     const banners = await prisma.banner.findMany({
+      where: whereClause,
       orderBy: { order: "asc" },
     });
     return res.status(200).json({ items: banners });
@@ -45,27 +53,31 @@ export default async function handler(
   if (req.method === "POST") {
     // POST /api/banners → สร้าง banner ใหม่
     const file = (req as any).file as Express.Multer.File | undefined;
-    const { title, sub, order } = req.body as {
+    const { title, sub, description, order, position } = req.body as {
       title?: string;
       sub?: string;
+      description?: string;
       order?: string;
+      position?: string;
     };
 
-    // ตรวจแค่ image (title/sub เป็น optional)
     if (!file) {
       return res.status(400).json({ error: "ต้องระบุรูปภาพ (field: image)" });
     }
 
     const imageUrl = `/uploads/banners/${file.filename}`;
     const orderNum = parseInt(order ?? "0", 10) || 0;
+    const positionValue = (position?.trim() || "hero") as string;
 
     try {
       const banner = await prisma.banner.create({
         data: {
           title: title?.trim() || null,
           sub: sub?.trim() || null,
+          description: description?.trim() || null, // ← added
           imageUrl,
           order: orderNum,
+          position: positionValue,
         },
       });
       return res.status(201).json(banner);
@@ -76,5 +88,5 @@ export default async function handler(
 
   // Method not allowed
   res.setHeader("Allow", ["GET", "POST"]);
-  res.status(405).end(`Method ${req.method} Not Allowed`);
+  return res.status(405).end(`Method ${req.method} Not Allowed`);
 }

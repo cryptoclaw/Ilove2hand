@@ -63,7 +63,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="w-full max-w-[200px] bg-white border rounded-2xl p-3 flex flex-col text-center shadow-sm hover:shadow-lg transition relative">
       {product.stock > 0 ? (
-        <Link href={`/products/${product.id}`} className="group block relative z-10">
+        <Link
+          href={`/products/${product.id}`}
+          className="group block relative z-10"
+        >
           <div className="relative w-full pt-[100%] rounded-lg overflow-hidden mb-3">
             <Image
               src={product.imageUrl ?? "/images/placeholder.png"}
@@ -72,19 +75,23 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <h3 className="text-black font-semibold text-lg mb-1 group-hover:text-green-600 transition-colors">
+          <h3 className="text-black font-semibold text-base sm:text-lg md:text-xl mb-1 group-hover:text-green-600 transition-colors">
             {product.name}
           </h3>
           {product.description && (
-            <p className="text-gray-500 text-xs mb-2 line-clamp-2">
+            <p className="text-gray-500 text-sm sm:text-base mb-2 line-clamp-2">
               {product.description}
             </p>
           )}
           <div className="flex items-center justify-center space-x-2 mb-2">
             {product.salePrice != null ? (
               <>
-                <span className="text-gray-400 line-through">฿{product.price}</span>
-                <span className="text-red-600 font-bold">฿{product.salePrice}</span>
+                <span className="text-gray-400 line-through">
+                  ฿{product.price}
+                </span>
+                <span className="text-red-600 font-bold">
+                  ฿{product.salePrice}
+                </span>
               </>
             ) : (
               <span className="text-green-600 font-bold">฿{product.price}</span>
@@ -115,8 +122,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-center justify-center space-x-2 mb-2">
             {product.salePrice != null ? (
               <>
-                <span className="text-gray-400 line-through">฿{product.price}</span>
-                <span className="text-red-600 font-bold">฿{product.salePrice}</span>
+                <span className="text-gray-400 line-through">
+                  ฿{product.price}
+                </span>
+                <span className="text-red-600 font-bold">
+                  ฿{product.salePrice}
+                </span>
               </>
             ) : (
               <span className="text-green-600 font-bold">฿{product.price}</span>
@@ -128,7 +139,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {product.stock === 0 ? (
         <button
           disabled
-          className="mt-auto py-2 rounded-full bg-gray-300 text-gray-700 cursor-not-allowed z-0"
+          className="mt-auto w-full py-2 sm:py-3 rounded-full bg-gray-300 text-gray-700 cursor-not-allowed"
         >
           สินค้าหมด
         </button>
@@ -136,9 +147,16 @@ export default function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleAddToCart}
           disabled={adding}
-          className={`mt-auto flex items-center justify-center space-x-2 bg-green-600 text-white py-2 rounded-full hover:bg-green-700 transition ${
-            adding ? "opacity-50 cursor-not-allowed" : ""
-          } z-10`}
+          className={`
+           mt-auto 
+           w-full 
+           flex items-center justify-center space-x-2 
+           bg-green-600 text-white 
+           py-2 sm:py-3 
+           text-sm sm:text-base 
+           rounded-full hover:bg-green-700 transition 
+           ${adding ? "opacity-50 cursor-not-allowed" : ""}
+        `}
         >
           <Plus size={16} />
           <span>{adding ? "กำลังเพิ่ม..." : "หยิบใส่รถเข็น"}</span>

@@ -5,7 +5,7 @@ import Head from "next/head";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import PromoModal from "./PromoModal";
-import CookieConsent from "./CookieConsent";  // import component cookie consent
+import CookieConsent from "./CookieConsent"; // import component cookie consent
 import type { ReactNode } from "react";
 
 interface LayoutProps {
@@ -70,7 +70,7 @@ export default function Layout({
       )}
 
       {/* เนื้อหาแต่ละหน้าหลัก ให้มี padding ด้านข้างตามดีไซน์ */}
-      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4 py-8">
+      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
 

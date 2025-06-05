@@ -6,12 +6,13 @@ import Banner, { BannerSlide } from "@/components/Banner";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import DiscountCarousel from "@/components/DiscountCarousel";
 import ProductCard from "@/components/ProductCard";
+import SubBanner from "@/components/SubBanner";
 import { prisma } from "@/lib/prisma";
 import { Category, Product } from "@/types/product";
-import SubBanner from "@/components/SubBanner";
 
 interface HomeProps {
-  banners: BannerSlide[];
+  banners: BannerSlide[]; // Hero banners
+  subBanners: BannerSlide[]; // Sub/Promotion banners
   featured: Product[];
   onSale: Product[];
   categories: Category[];
@@ -19,46 +20,45 @@ interface HomeProps {
 
 export default function HomePage({
   banners,
+  subBanners,
   featured,
   onSale,
   categories,
 }: HomeProps) {
-  // Hero banner
   const heroSlides: BannerSlide[] = banners;
-
-  // Promotion banner จากสินค้า on sale
-  const promoSlides: BannerSlide[] = onSale.map((p) => ({
-    title: p.name,
-    sub: p.description ?? "",
-    img: p.imageUrl ?? "/images/placeholder.png",
-  }));
+  const promoSlides: BannerSlide[] = subBanners;
 
   return (
     <Layout>
       {/* Hero Banner */}
-      <section className="py-8 px-4">
+      <section className="mt-16 container py-8">
         <Banner slides={heroSlides} />
       </section>
 
       {/* Category Carousel */}
-      <section className="px-4">
+      <section className="container">
         <CategoryCarousel categories={categories} />
       </section>
 
       {/* On Sale Carousel */}
-      <section className="py-8 px-4">
+      <section className="container py-8">
         <DiscountCarousel items={onSale} />
       </section>
 
-      {/* Promotion Sub-Banner */}
-      <section className="py-8 px-4">
+      {/* Legacy SubBanner Component */}
+      <section className="container py-8">
         <SubBanner />
       </section>
 
+      {/* Custom Promotion/Sub Banner */}
+      <section className="container py-8">
+        <Banner slides={promoSlides} isPromotion />
+      </section>
+
       {/* Featured Products */}
-      <section className="py-8 px-4">
+      <section className="container py-8">
         <h2 className="text-xl font-semibold mb-4">สินค้าแนะนำ</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {featured.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
@@ -69,17 +69,29 @@ export default function HomePage({
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  // 1. ดึง banners จาก DB
-  const rawBanners = await prisma.banner.findMany({
+  // 1. ดึง hero banners (position = "hero")
+  const rawHero = await prisma.banner.findMany({
+    where: { position: "hero" },
     orderBy: { order: "asc" },
   });
-  const banners: BannerSlide[] = rawBanners.map((b) => ({
+  const banners: BannerSlide[] = rawHero.map((b) => ({
     title: b.title ?? "",
     sub: b.sub ?? "",
     img: b.imageUrl,
   }));
 
-  // 2. ดึง featured products (เฉพาะที่ isFeatured = true)
+  // 2. ดึง sub/promotional banners (position = "sub")
+  const rawSub = await prisma.banner.findMany({
+    where: { position: "sub" },
+    orderBy: { order: "asc" },
+  });
+  const subBanners: BannerSlide[] = rawSub.map((b) => ({
+    title: b.title ?? "",
+    sub: b.sub ?? "",
+    img: b.imageUrl,
+  }));
+
+  // 3. ดึง featured products (เฉพาะที่ isFeatured = true)
   const rawFeatured = await prisma.product.findMany({
     where: { isFeatured: true },
     orderBy: { updatedAt: "desc" },
@@ -96,7 +108,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     isFeatured: p.isFeatured,
   }));
 
-  // 3. ดึง onSale products
+  // 4. ดึง onSale products
   const rawOnSale = await prisma.product.findMany({
     where: { salePrice: { not: null } },
     orderBy: { updatedAt: "desc" },
@@ -113,7 +125,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     isFeatured: p.isFeatured,
   }));
 
-  // 4. ดึง categories
+  // 5. ดึง categories
   const rawCategories = await prisma.category.findMany({
     orderBy: { name: "asc" },
   });
@@ -123,6 +135,6 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   }));
 
   return {
-    props: { banners, featured, onSale, categories },
+    props: { banners, subBanners, featured, onSale, categories },
   };
 };
