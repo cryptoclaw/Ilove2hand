@@ -58,7 +58,9 @@ export default function ProductPage({ product }: ProductPageProps) {
       const current = inCart?.quantity ?? 0;
 
       if (current + qty > product.stock) {
-        setError(`สั่งได้สูงสุด ${product.stock} ชิ้น (มีในตะกร้าแล้ว ${current} ชิ้น)`);
+        setError(
+          `สั่งได้สูงสุด ${product.stock} ชิ้น (มีในตะกร้าแล้ว ${current} ชิ้น)`
+        );
         setLoading(false);
         return;
       }
@@ -177,6 +179,7 @@ export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({
     price: p.price,
     imageUrl: p.imageUrl,
     stock: p.stock,
+    isFeatured: p.isFeatured,
     salePrice: p.salePrice ?? null,
     isFeatured: p.isFeatured, // add this line
     createdAt: p.createdAt.toISOString(),

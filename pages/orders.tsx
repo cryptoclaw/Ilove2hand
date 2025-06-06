@@ -18,18 +18,18 @@ interface OrderItem {
 type OrderSummary = {
   id: string;
   totalAmount: number;
-  status: string;      // PENDING, PROCESSING, SHIPPED, COMPLETED, CANCELLED
+  status: string; // PENDING, PROCESSING, SHIPPED, COMPLETED, CANCELLED
   createdAt: string;
   items: OrderItem[];
 };
 
 // แปลงสถานะเป็นภาษาไทย
-const T: Record<string,string> = {
-  pending:    "รอดำเนินการ",
+const T: Record<string, string> = {
+  pending: "รอดำเนินการ",
   processing: "กำลังดำเนินการ",
-  shipped:    "จัดส่งแล้ว",
-  completed:  "สำเร็จ",
-  cancelled:  "ยกเลิกแล้ว",
+  shipped: "จัดส่งแล้ว",
+  completed: "สำเร็จ",
+  cancelled: "ยกเลิกแล้ว",
 };
 
 export default function OrdersPage() {
@@ -37,21 +37,34 @@ export default function OrdersPage() {
   const router = useRouter();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  // สถานะที่จะแสดงในแท็บ (lowercase)
+  const statuses = [
+    "pending",
+    "processing",
+    "shipped",
+    "completed",
+    "cancelled",
+  ];
+  const [activeStatus, setActiveStatus] = useState<string>("pending");
+
   // fetcher สำหรับ SWR
   const fetcher = (url: string) =>
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => {
+      .then((r) => {
         if (!r.ok) throw new Error("โหลดคำสั่งซื้อไม่สำเร็จ");
         return r.json();
       })
-      .then(data => data.orders as OrderSummary[]);
+      .then((data) => data.orders as OrderSummary[]);
 
-  // SWR: revalidateOnFocus = false ลดการยิง request ตอน focus window
-  const { data: orders, error, mutate } = useSWR(
-    token ? "/api/orders" : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  // SWR: revalidateOnFocus = true เพื่อดึงใหม่เมื่อกลับมาโฟกัส หรือ refreshInterval เพื่อ polling ทุกนาที
+  const {
+    data: orders,
+    error,
+    mutate,
+  } = useSWR(token ? "/api/orders" : null, fetcher, {
+    revalidateOnFocus: true,
+    refreshInterval: 60000, // ดึงใหม่ทุก 60 วินาที เผื่อแอดมินเปลี่ยนสถานะ
+  });
 
   // ตรวจสอบ token และ redirect ถ้าไม่มี
   useEffect(() => {
@@ -65,7 +78,9 @@ export default function OrdersPage() {
   if (error) {
     return (
       <Layout title="คำสั่งซื้อของฉัน">
-        <div className="p-8 text-center text-red-500">เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ</div>
+        <div className="p-8 text-center text-red-500">
+          เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ
+        </div>
       </Layout>
     );
   }
@@ -73,10 +88,17 @@ export default function OrdersPage() {
   if (!orders) {
     return (
       <Layout title="คำสั่งซื้อของฉัน">
-        <div className="p-8 text-center text-gray-500">กำลังโหลดคำสั่งซื้อ…</div>
+        <div className="p-8 text-center text-gray-500">
+          กำลังโหลดคำสั่งซื้อ…
+        </div>
       </Layout>
     );
   }
+
+  // กรองออร์เดอร์ตามสถานะที่เลือก
+  const filteredOrders = orders.filter(
+    (o) => o.status.toLowerCase() === activeStatus
+  );
 
   // ฟังก์ชันยืนยันรับสินค้า
   const confirmReceived = async (orderId: string) => {
@@ -91,9 +113,10 @@ export default function OrdersPage() {
         body: JSON.stringify({ status: "completed" }),
       });
       if (!res.ok) throw new Error();
-      // อัปเดตใน cache ของ SWR ทันทีโดยไม่ revalidate ทั้งหมด
+
+      // อัปเดต cache ของ SWR ทันทีโดยไม่ต้อง revalidate ทั้งหมด
       mutate(
-        orders.map(o =>
+        orders.map((o) =>
           o.id === orderId ? { ...o, status: "COMPLETED" } : o
         ),
         false
@@ -110,11 +133,30 @@ export default function OrdersPage() {
       <div className="px-4 sm:px-6 md:px-8">
         <h1 className="text-4xl font-bold mb-6">คำสั่งซื้อของฉัน</h1>
 
-        {orders.length === 0 ? (
-          <div className="p-6 text-center text-gray-600 text-lg">ยังไม่มีคำสั่งซื้อ</div>
+        {/* แท็บเลือกสถานะ */}
+        <div className="flex space-x-4 mb-6">
+          {statuses.map((status) => (
+            <button
+              key={status}
+              onClick={() => setActiveStatus(status)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
+                activeStatus === status
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {T[status]}
+            </button>
+          ))}
+        </div>
+
+        {filteredOrders.length === 0 ? (
+          <div className="p-6 text-center text-gray-600 text-lg">
+            ไม่มีคำสั่งซื้อในสถานะ "{T[activeStatus]}"
+          </div>
         ) : (
           <ul className="space-y-6">
-            {orders.map(o => (
+            {filteredOrders.map((o) => (
               <li
                 key={o.id}
                 className="bg-white border border-gray-200 rounded-lg p-6 shadow hover:shadow-lg transition"
@@ -122,7 +164,9 @@ export default function OrdersPage() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                   <div>
-                    <p className="text-2xl font-semibold">ออร์เดอร์ #{o.id.slice(-6)}</p>
+                    <p className="text-2xl font-semibold">
+                      ออร์เดอร์ #{o.id.slice(-6)}
+                    </p>
                     <p className="text-sm text-gray-400">
                       {new Date(o.createdAt).toLocaleString("th-TH", {
                         year: "numeric",
@@ -135,13 +179,15 @@ export default function OrdersPage() {
                   </div>
                   <div className="mt-3 sm:mt-0 text-right">
                     <p className="text-xl font-semibold">{o.totalAmount} ฿</p>
-                    <p className="text-md text-gray-500">{T[o.status.toLowerCase()]}</p>
+                    <p className="text-md text-gray-500">
+                      {T[o.status.toLowerCase()]}
+                    </p>
                   </div>
                 </div>
 
                 {/* Items */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                  {o.items.map(it => (
+                  {o.items.map((it) => (
                     <div key={it.id} className="flex items-center space-x-3">
                       <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                         {it.product.imageUrl ? (
@@ -151,18 +197,24 @@ export default function OrdersPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300">ไม่มีรูป</div>
+                          <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            ไม่มีรูป
+                          </div>
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="text-lg font-medium truncate">{it.product.name}</p>
-                        <p className="text-sm text-gray-500">{it.quantity} × {it.priceAtPurchase} ฿</p>
+                        <p className="text-lg font-medium truncate">
+                          {it.product.name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {it.quantity} × {it.priceAtPurchase} ฿
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* ปุ่มยืนยันรับสินค้า */}
+                {/* ปุ่มยืนยันรับสินค้า (เฉพาะสถานะที่ยังไม่เป็น completed) */}
                 {o.status.toLowerCase() !== "completed" && (
                   <div className="text-right">
                     <button
@@ -170,7 +222,9 @@ export default function OrdersPage() {
                       disabled={updatingId === o.id}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {updatingId === o.id ? "กำลังยืนยัน..." : "ยืนยันฉันได้รับสินค้าแล้ว"}
+                      {updatingId === o.id
+                        ? "กำลังยืนยัน..."
+                        : "ยืนยันฉันได้รับสินค้าแล้ว"}
                     </button>
                   </div>
                 )}
