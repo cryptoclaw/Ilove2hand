@@ -34,6 +34,14 @@ interface Product {
   isFeatured: boolean;
 }
 
+interface SubBannerForm {
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+  imageUrl: string;
+}
+
 export const getServerSideProps: GetServerSideProps = async (ctx) =>
   adminGuard(ctx, async () => ({ props: {} }));
 
@@ -608,35 +616,97 @@ function ManageCategorySection() {
   );
 }
 function ManageSubBannerSection() {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SubBannerForm>({
     title: "",
     description: "",
     buttonText: "",
     buttonLink: "",
+    imageUrl: "",
   });
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+
+  // โหลดข้อมูลเริ่มต้นพร้อมตั้ง previewUrl
   useEffect(() => {
     fetch("/api/subbanner")
       .then((r) => r.json())
-      .then((data) => setForm(data));
+      .then((data) => {
+        setForm({
+          title: data.title || "",
+          description: data.description || "",
+          buttonText: data.buttonText || "",
+          buttonLink: data.buttonLink || "",
+          imageUrl: data.imageUrl || "",
+        });
+        if (data.imageUrl) setPreviewUrl(data.imageUrl);
+      })
+      .catch(console.error);
   }, []);
 
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await fetch("/api/subbanner", {
+    let imageUrl = form.imageUrl;
+
+    // ถ้ามีไฟล์ ให้ upload แล้วรับ URL มา
+    if (file) {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadData,
+      });
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        imageUrl = url;
+      } else {
+        console.error("Upload failed");
+      }
+    }
+
+    // อัปเดต SubBanner
+    const res = await fetch("/api/subbanner", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, imageUrl }),
     });
-    alert("อัปเดต Sub-Banner เรียบร้อย");
+
+    if (res.ok) {
+      alert("อัปเดต Sub-Banner เรียบร้อย");
+    } else {
+      console.error(await res.text());
+      alert("เกิดข้อผิดพลาดในการอัปเดต");
+    }
   };
 
   return (
     <div className="max-w-xl">
       <h2 className="text-2xl font-semibold mb-4">แก้ไข Sub-Banner</h2>
+
+      {/* Preview */}
+      <div className="mb-6">
+        <div className="text-sm font-medium mb-1">Preview Background</div>
+        <div
+          className="w-full h-32 rounded-xl bg-center bg-cover border"
+          style={{
+            backgroundImage: previewUrl ? `url(${previewUrl})` : undefined,
+          }}
+        />
+      </div>
+
       <form onSubmit={onSubmit} className="space-y-4">
         <input
           name="title"
@@ -666,9 +736,22 @@ function ManageSubBannerSection() {
           placeholder="Button Link"
           className="w-full border p-2 rounded"
         />
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            เลือกรูปภาพพื้นหลัง
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={onFileChange}
+            className="w-full"
+          />
+        </div>
+
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
         >
           บันทึก
         </button>

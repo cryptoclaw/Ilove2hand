@@ -1,4 +1,3 @@
-// pages/api/subbanner/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
@@ -12,13 +11,16 @@ export default async function handler(
   }
 
   if (req.method === "PUT") {
-    const { title, description, buttonText, buttonLink } = req.body;
+    const { title, description, buttonText, buttonLink, imageUrl } = req.body;
+
     const existing = await prisma.subBanner.findFirst();
+
     const updated = await prisma.subBanner.upsert({
       where: { id: existing?.id ?? "" },
-      create: { title, description, buttonText, buttonLink },
-      update: { title, description, buttonText, buttonLink },
+      create: { title, description, buttonText, buttonLink, imageUrl },
+      update: { title, description, buttonText, buttonLink, imageUrl },
     });
+
     return res.status(200).json(updated);
   }
 

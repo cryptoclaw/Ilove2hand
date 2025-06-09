@@ -173,6 +173,7 @@ model SubBanner {
   title       String
   description String
   buttonText  String
+  imageUrl    String?  
   buttonLink  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
