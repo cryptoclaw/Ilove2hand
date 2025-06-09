@@ -1,3 +1,4 @@
+// components/Layout.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -30,38 +31,36 @@ export default function Layout({
         setShowPromo(true);
         localStorage.setItem("promoShown", "true");
       }
-
-      // ตรวจสอบ cookie consent
-      const cookieConsent = localStorage.getItem("cookieConsent"); // หรือ Cookies.get("cookieConsent") ถ้าใช้ js-cookie
+      const cookieConsent = localStorage.getItem("cookieConsent");
       if (!cookieConsent) {
         setShowCookieConsent(true);
       }
     }
   }, []);
 
-  // ฟังก์ชันปิด cookie consent popup และเซ็ตสถานะ
   const handleCookieConsent = (accepted: boolean) => {
     localStorage.setItem("cookieConsent", accepted ? "true" : "false");
     setShowCookieConsent(false);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-green-50">
+    <div className="flex flex-col min-h-screen bg-white">
       <Head>
         <title>{title}</title>
-        <meta name="description" content="ตลาดสินค้าเกษตรสดใหม่ ICN_FREEZE" />
+        <meta
+          name="description"
+          content="ตลาดสินค้าเกษตรสดใหม่ ICN_FREEZE"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* Navbar ชิดบนสุด */}
-      <header>
+      {/* 1) fixed header */}
+      <header className="fixed top-0 left-0 right-0 z-50">
         <Navbar />
       </header>
 
-      {/* แสดง modal โปรโมชัน */}
+      {/* 2) promo + cookie */}
       <PromoModal show={showPromo} onClose={() => setShowPromo(false)} />
-
-      {/* แสดง popup cookie consent */}
       {showCookieConsent && (
         <CookieConsent
           onAccept={() => handleCookieConsent(true)}
@@ -69,12 +68,18 @@ export default function Layout({
         />
       )}
 
-      {/* เนื้อหาแต่ละหน้าหลัก ให้มี padding ด้านข้างตามดีไซน์ */}
-      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* 3) ดันเนื้อหาไม่ให้ทับด้วย margin-top */}
+      <main
+        className="
+          flex-grow w-full max-w-screen-xl mx-auto
+          px-4 sm:px-6 lg:px-8 py-8
+          mt-16 sm:mt-20 md:mt-24
+          
+        "
+      >
         {children}
       </main>
 
-      {/* Footer กว้างเต็มจอ */}
       <Footer />
     </div>
   );

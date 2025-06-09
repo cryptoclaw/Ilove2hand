@@ -11,34 +11,42 @@ interface AllProductsProps {
   products: Product[];
   categories: Category[];
   selectedCategory: string | null;
+  discount: boolean;
 }
 
 export default function AllProductsPage({
   products,
   categories,
   selectedCategory,
+  discount,
 }: AllProductsProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
 
+  // ควบคุม search term
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
+  // เปลี่ยนหมวดหมู่ พร้อมคงสถานะ discount ถ้ามี
   const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const cat = e.target.value;
-    const url = cat ? `/all-products?category=${cat}` : `/all-products`;
-    router.push(url);
+    const params = new URLSearchParams();
+    if (discount) params.set("discount", "1");
+    if (cat) params.set("category", cat);
+    router.push(`/all-products?${params.toString()}`);
   };
 
-  // กรองตาม search term
+  // กรองตามชื่อ + discount ถ้ามี (แต่ฝั่ง server ก็กรองให้แล้วนี่)
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <Layout title="สินค้าทั้งหมด">
-      <h1 className="text-3xl font-bold mb-4">สินค้าทั้งหมด</h1>
+    <Layout title={discount ? "สินค้าลดราคา" : "สินค้าทั้งหมด"}>
+      <h1 className="text-3xl font-bold mb-4">
+        {discount ? "สินค้าลดราคา" : "สินค้าทั้งหมด"}
+      </h1>
 
       {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -82,6 +90,7 @@ export const getServerSideProps: GetServerSideProps<AllProductsProps> = async ({
 }) => {
   const selectedCategory =
     typeof query.category === "string" ? query.category : null;
+  const discount = query.discount === "1";
 
   // ดึงหมวดหมู่ทั้งหมด
   const rawCategories = await prisma.category.findMany({
@@ -92,9 +101,19 @@ export const getServerSideProps: GetServerSideProps<AllProductsProps> = async ({
     name: c.name,
   }));
 
-  // ดึงสินค้า โดยกรองตาม selectedCategory
+  // สร้าง where เงื่อนไขให้ดึงสินค้า
+  const whereClause: any = {};
+  if (selectedCategory) {
+    whereClause.categoryId = selectedCategory;
+  }
+  if (discount) {
+    // ถ้าใช้ flag isOnSale ให้เปลี่ยนเป็น { isOnSale: true }
+    whereClause.salePrice = { not: null };
+  }
+
+  // ดึงสินค้า
   const rawProducts = await prisma.product.findMany({
-    where: selectedCategory ? { categoryId: selectedCategory } : {},
+    where: whereClause,
     orderBy: { createdAt: "desc" },
   });
   const products: Product[] = rawProducts.map((p) => ({
@@ -114,6 +133,7 @@ export const getServerSideProps: GetServerSideProps<AllProductsProps> = async ({
       products,
       categories,
       selectedCategory,
+      discount,
     },
   };
 };

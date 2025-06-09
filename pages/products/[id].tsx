@@ -181,7 +181,6 @@ export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({
     stock: p.stock,
     isFeatured: p.isFeatured,
     salePrice: p.salePrice ?? null,
-    isFeatured: p.isFeatured, // add this line
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };

@@ -131,7 +131,7 @@ export default function OrdersPage() {
   return (
     <Layout title="คำสั่งซื้อของฉัน">
       <div className="px-4 sm:px-6 md:px-8">
-        <h1 className="text-4xl font-bold mb-6">คำสั่งซื้อของฉัน</h1>
+        <h1 className="text-3xl font-bold mb-6">คำสั่งซื้อของฉัน</h1>
 
         {/* แท็บเลือกสถานะ */}
         <div className="flex space-x-4 mb-6">
@@ -214,8 +214,8 @@ export default function OrdersPage() {
                   ))}
                 </div>
 
-                {/* ปุ่มยืนยันรับสินค้า (เฉพาะสถานะที่ยังไม่เป็น completed) */}
-                {o.status.toLowerCase() !== "completed" && (
+                {/* ปุ่มยืนยันรับสินค้า (เฉพาะสถานะ SHIPPED) */}
+                {o.status.toLowerCase() === "shipped" && (
                   <div className="text-right">
                     <button
                       onClick={() => confirmReceived(o.id)}
