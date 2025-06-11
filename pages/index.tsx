@@ -8,13 +8,14 @@ import SubBanner from "@/components/SubBanner";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 import { Category, Product } from "@/types/product";
+import CouponsCarousel from "@/components/CouponsCarousel";
 
 interface HomeProps {
-  banners: BannerSlide[];       // Hero banners
-  subBanners: BannerSlide[];    // Sub/Promotion banners
-  featured: Product[];          // สินค้าแนะนำ
-  onSale: Product[];            // สินค้าลดราคา
-  bestSellers: Product[];       // สินค้าขายดี
+  banners: BannerSlide[]; // Hero banners
+  subBanners: BannerSlide[]; // Sub/Promotion banners
+  featured: Product[]; // สินค้าแนะนำ
+  onSale: Product[]; // สินค้าลดราคา
+  bestSellers: Product[]; // สินค้าขายดี
   categories: Category[];
 }
 
@@ -49,7 +50,7 @@ export default function HomePage({
       </section>
 
       {/* Custom Promotion/Sub Banner */}
-      <section className="container py-2">
+      <section className="container py-10">
         <Banner slides={subBanners} isPromotion />
       </section>
 
@@ -61,6 +62,12 @@ export default function HomePage({
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
+      </section>
+
+      {/* Coupons */}
+      <section className="container py-10">
+        <h2 className="text-xl font-semibold mb-4">คูปอง</h2>
+        <CouponsCarousel />
       </section>
 
       {/* Featured Products */}

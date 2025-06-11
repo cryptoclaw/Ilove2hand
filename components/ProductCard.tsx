@@ -1,3 +1,4 @@
+// components/ProductCard.tsx
 "use client";
 
 import { useState } from "react";
@@ -23,25 +24,21 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
     setAdding(true);
-
     try {
       const cartRes = await fetch("/api/cart", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!cartRes.ok) throw new Error("Cannot fetch cart");
-
       const { items: cartItems } = await cartRes.json();
       const currentQuantity =
         (cartItems as { productId: string; quantity: number }[]).find(
           (item) => item.productId === product.id
         )?.quantity ?? 0;
-
       if (currentQuantity + 1 > product.stock) {
         alert("จำนวนสินค้าเกินสต็อกที่มี");
         setAdding(false);
         return;
       }
-
       const addRes = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -51,7 +48,6 @@ export default function ProductCard({ product }: ProductCardProps) {
         body: JSON.stringify({ productId: product.id, quantity: 1 }),
       });
       if (!addRes.ok) throw new Error("Failed to add to cart");
-
       router.push("/cart");
     } catch {
       alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
@@ -61,13 +57,14 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="w-full max-w-[200px] bg-white border rounded-2xl p-3 flex flex-col text-center shadow-sm hover:shadow-lg transition relative">
+    <div className="w-full max-w-[200px] bg-white border rounded-2xl p-4 flex flex-col space-y-4 text-center shadow-sm hover:shadow-lg transition relative">
       {product.stock > 0 ? (
         <Link
           href={`/products/${product.id}`}
-          className="group block relative z-10"
+          className="group flex flex-col space-y-2 relative z-10"
         >
-          <div className="relative w-full pt-[100%] rounded-lg overflow-hidden mb-3">
+          {/* รูป */}
+          <div className="relative w-full pt-[100%] rounded-lg overflow-hidden">
             <Image
               src={product.imageUrl ?? "/images/placeholder.png"}
               alt={product.name}
@@ -75,32 +72,44 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <h3 className="text-black font-semibold text-base sm:text-lg md:text-xl mb-1 group-hover:text-green-600 transition-colors">
+
+          {/* ชื่อสินค้า (16px, ปกติ) */}
+          <h3 className="text-base font-normal text-black group-hover:text-green-600 transition-colors">
             {product.name}
           </h3>
+
+          {/* รายละเอียด (14px) */}
           {product.description && (
-            <p className="text-gray-500 text-sm sm:text-base mb-2 line-clamp-2">
+            <p className="text-gray-500 text-sm line-clamp-2">
               {product.description}
             </p>
           )}
-          <div className="flex items-center justify-center space-x-2 mb-2">
+
+          {/* ราคาสินค้า */}
+          <div className="flex items-center justify-center space-x-2">
             {product.salePrice != null ? (
               <>
-                <span className="text-gray-400 line-through">
+                {/* ราคาตัวเก่า: 14px, สีเทา, ไม่หนา */}
+                <span className="text-gray-400 line-through text-sm font-normal">
                   ฿{product.price}
                 </span>
-                <span className="text-red-600 font-bold">
+                {/* ราคาหลังลด: 18px, ไม่หนา */}
+                <span className="text-red-600 text-lg font-bold">
                   ฿{product.salePrice}
                 </span>
               </>
             ) : (
-              <span className="text-green-600 font-bold">฿{product.price}</span>
+              /* ราคาปกติ: 18px, ไม่หนา */
+              <span className="text-green-600 text-lg font-bold">
+                ฿{product.price}
+              </span>
             )}
           </div>
         </Link>
       ) : (
-        <div className="group block relative z-10 cursor-default">
-          <div className="relative w-full pt-[100%] rounded-lg overflow-hidden mb-3">
+        <div className="flex flex-col space-y-2 cursor-default relative z-10">
+          {/* รูป + overlay */}
+          <div className="relative w-full pt-[100%] rounded-lg overflow-hidden">
             <Image
               src={product.imageUrl ?? "/images/placeholder.png"}
               alt={product.name}
@@ -111,31 +120,40 @@ export default function ProductCard({ product }: ProductCardProps) {
               สินค้าหมด
             </div>
           </div>
-          <h3 className="text-black font-semibold text-lg mb-1">
+
+          {/* ชื่อสินค้า (16px, ปกติ) */}
+          <h3 className="text-base font-normal text-black">
             {product.name}
           </h3>
+
+          {/* รายละเอียด (14px) */}
           {product.description && (
-            <p className="text-gray-500 text-xs mb-2 line-clamp-2">
+            <p className="text-gray-500 text-sm line-clamp-2">
               {product.description}
             </p>
           )}
-          <div className="flex items-center justify-center space-x-2 mb-2">
+
+          {/* ราคาสินค้า */}
+          <div className="flex items-center justify-center space-x-2">
             {product.salePrice != null ? (
               <>
-                <span className="text-gray-400 line-through">
+                <span className="text-gray-400 line-through text-sm font-normal">
                   ฿{product.price}
                 </span>
-                <span className="text-red-600 font-bold">
+                <span className="text-red-600 text-lg font-bold">
                   ฿{product.salePrice}
                 </span>
               </>
             ) : (
-              <span className="text-green-600 font-bold">฿{product.price}</span>
+              <span className="text-green-600 text-lg font-bold">
+                ฿{product.price}
+              </span>
             )}
           </div>
         </div>
       )}
 
+      {/* ปุ่ม */}
       {product.stock === 0 ? (
         <button
           disabled
@@ -148,15 +166,15 @@ export default function ProductCard({ product }: ProductCardProps) {
           onClick={handleAddToCart}
           disabled={adding}
           className={`
-           mt-auto 
-           w-full 
-           flex items-center justify-center space-x-2 
-           bg-green-600 text-white 
-           py-2 sm:py-3 
-           text-sm sm:text-base 
-           rounded-full hover:bg-green-700 transition 
-           ${adding ? "opacity-50 cursor-not-allowed" : ""}
-        `}
+            mt-auto
+            w-full
+            flex items-center justify-center space-x-2
+            bg-green-600 text-white
+            py-2 sm:py-3
+            text-sm sm:text-base
+            rounded-full hover:bg-green-700 transition
+            ${adding ? "opacity-50 cursor-not-allowed" : ""}
+          `}
         >
           <Plus size={16} />
           <span>{adding ? "กำลังเพิ่ม..." : "หยิบใส่รถเข็น"}</span>
