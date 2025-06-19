@@ -43,13 +43,15 @@ export default async function handler(
       data: {
         name,
         description,
-        price: parseFloat(price),
+        price:     parseFloat(price),
         salePrice: salePrice ? parseFloat(salePrice) : null,
-        stock: parseInt(stock, 10),
-        imageUrl: `/uploads/products/${file.filename}`,
-        category: { connect: { id: categoryId } },
+        stock:     parseInt(stock, 10),
+        imageUrl:  `/uploads/products/${file.filename}`,
+        // เชื่อมโยงหมวดหมู่ด้วย foreign key แทน nested connect
+        categoryId: categoryId || null,
       },
     });
+
     return res.status(201).json(newProduct);
   }
 
