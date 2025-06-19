@@ -1,5 +1,6 @@
 // pages/index.tsx
 import { GetServerSideProps } from "next";
+import useTranslation from "next-translate/useTranslation";
 import Layout from "@/components/Layout";
 import Banner, { BannerSlide } from "@/components/Banner";
 import CategoryCarousel from "@/components/CategoryCarousel";
@@ -11,12 +12,19 @@ import { Category, Product } from "@/types/product";
 import CouponsCarousel from "@/components/CouponsCarousel";
 
 interface HomeProps {
-  banners: BannerSlide[]; // Hero banners
-  subBanners: BannerSlide[]; // Sub/Promotion banners
-  featured: Product[]; // สินค้าแนะนำ
-  onSale: Product[]; // สินค้าลดราคา
-  bestSellers: Product[]; // สินค้าขายดี
+  banners: BannerSlide[];       // Hero banners
+  subBanners: BannerSlide[];    // Sub/Promotion banners
+  featured: Product[];          // สินค้าแนะนำ
+  onSale: Product[];            // สินค้าลดราคา
+  bestSellers: Product[];       // สินค้าขายดี
   categories: Category[];
+  subBannerData: {
+    title: string;
+    description: string;
+    buttonText: string;
+    buttonLink: string;
+    img: string;
+  } | null;
 }
 
 export default function HomePage({
@@ -26,37 +34,43 @@ export default function HomePage({
   onSale,
   bestSellers,
   categories,
+  subBannerData,
 }: HomeProps) {
+  const { t } = useTranslation("common");
   return (
-    <Layout>
+    <Layout title={t("siteTitle")}>
       {/* Hero Banner */}
       <section className="container py-2">
         <Banner slides={banners} />
       </section>
 
       {/* Category Carousel */}
-      <section className="container py-2">
+      <section className="container py-6">
+        <h2 className="text-xl font-semibold mb-4">{t("categories")}</h2>
         <CategoryCarousel categories={categories} />
       </section>
 
-      {/* On Sale Carousel */}
-      <section className="container py-2">
+      {/* On Sale */}
+      <section className="container py-6">
+        <h2 className="text-xl font-semibold mb-4">{t("onSale")}</h2>
         <DiscountCarousel items={onSale} />
       </section>
 
-      {/* Legacy SubBanner Component */}
-      <section className="container py-2">
-        <SubBanner />
-      </section>
+      {/* Legacy SubBanner */}
+      {subBannerData && (
+        <section className="container py-6">
+          <SubBanner {...subBannerData} />
+        </section>
+      )}
 
       {/* Custom Promotion/Sub Banner */}
-      <section className="container py-10">
+      <section className="container py-2">
         <Banner slides={subBanners} isPromotion />
       </section>
 
       {/* Best Sellers */}
-      <section className="container py-2">
-        <h2 className="text-xl font-semibold mb-4">สินค้าขายดี</h2>
+      <section className="container py-6">
+        <h2 className="text-xl font-semibold mb-4">{t("bestSellers")}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {bestSellers.map((p) => (
             <ProductCard key={p.id} product={p} />
@@ -71,8 +85,8 @@ export default function HomePage({
       </section>
 
       {/* Featured Products */}
-      <section className="container py-10">
-        <h2 className="text-xl font-semibold mb-4">สินค้าแนะนำ</h2>
+      <section className="container py-6">
+        <h2 className="text-xl font-semibold mb-4">{t("featured")}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {featured.map((p) => (
             <ProductCard key={p.id} product={p} />
@@ -83,78 +97,78 @@ export default function HomePage({
   );
 }
 
-export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
+export const getServerSideProps: GetServerSideProps<HomeProps> = async ({
+  locale,
+}) => {
+  const lang = locale ?? "th";
+
   // 1. Hero banners
-  const rawHero = await prisma.banner.findMany({
-    where: { position: "hero" },
-    orderBy: { order: "asc" },
+  const rawHero = await prisma.bannerLocale.findMany({
+    where: { locale: lang },
+    include: { banner: true },
+    orderBy: { banner: { order: "asc" } },
   });
-  const banners: BannerSlide[] = rawHero.map((b) => ({
-    title: b.title ?? "",
-    sub: b.sub ?? "",
-    img: b.imageUrl,
+  const banners: BannerSlide[] = rawHero.map(({ title, sub, banner }) => ({
+    title: title ?? "",
+    sub: sub ?? "",
+    img: banner.imageUrl,
   }));
 
-  // 2. Sub/promotional banners
-  const rawSub = await prisma.banner.findMany({
-    where: { position: "sub" },
-    orderBy: { order: "asc" },
+  // 2. Promotion banners
+  const rawPromo = await prisma.bannerLocale.findMany({
+    where: { locale: lang, banner: { position: "sub" } },
+    include: { banner: true },
+    orderBy: { banner: { order: "asc" } },
   });
-  const subBanners: BannerSlide[] = rawSub.map((b) => ({
-    title: b.title ?? "",
-    sub: b.sub ?? "",
-    img: b.imageUrl,
+  const subBanners: BannerSlide[] = rawPromo.map(({ title, sub, banner }) => ({
+    title: title ?? "",
+    sub: sub ?? "",
+    img: banner.imageUrl,
   }));
 
-  // 3. Featured products
-  const rawFeatured = await prisma.product.findMany({
-    where: { isFeatured: true },
-    orderBy: { updatedAt: "desc" },
-    take: 6,
-  });
-  const featured: Product[] = rawFeatured.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    price: p.price,
-    imageUrl: p.imageUrl,
-    stock: p.stock,
-    salePrice: p.salePrice ?? null,
-    isFeatured: p.isFeatured,
-  }));
+  // helper: fetch localized products
+  async function getProducts(where: any, take?: number) {
+    const raw = await prisma.product.findMany({
+      where,
+      take,
+      orderBy: { updatedAt: "desc" },
+      include: { translations: { where: { locale: lang }, take: 1 } },
+    });
+    return raw.map((p) => ({
+      id: p.id,
+      name: p.translations[0]?.name ?? "",
+      description: p.translations[0]?.description ?? "",
+      price: p.price,
+      imageUrl: p.imageUrl,
+      stock: p.stock,
+      salePrice: p.salePrice ?? null,
+      isFeatured: p.isFeatured,
+    }));
+  }
 
-  // 4. On-sale products
-  const rawOnSale = await prisma.product.findMany({
-    where: { salePrice: { not: null } },
-    orderBy: { updatedAt: "desc" },
-    take: 8,
-  });
-  const onSale: Product[] = rawOnSale.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    price: p.price,
-    imageUrl: p.imageUrl,
-    stock: p.stock,
-    salePrice: p.salePrice!,
-    isFeatured: p.isFeatured,
-  }));
+  // 3. Featured
+  const featured = await getProducts({ isFeatured: true }, 6);
 
-  // 5. Best sellers: groupBy orderItem.quantity แล้วเรียง desc, เอา top 8
+  // 4. On Sale
+  const onSale = await getProducts({ salePrice: { not: null } }, 8);
+
+  // 5. Best Sellers
   const top = await prisma.orderItem.groupBy({
     by: ["productId"],
     _sum: { quantity: true },
     orderBy: { _sum: { quantity: "desc" } },
     take: 8,
   });
-  // ดึงข้อมูล product มาตามลำดับ
   const bestSellers: Product[] = await Promise.all(
-    top.map(async (t) => {
-      const p = await prisma.product.findUnique({ where: { id: t.productId } });
+    top.map(async ({ productId }) => {
+      const p = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { translations: { where: { locale: lang }, take: 1 } },
+      });
       return {
         id: p!.id,
-        name: p!.name,
-        description: p!.description,
+        name: p!.translations[0]?.name ?? "",
+        description: p!.translations[0]?.description ?? "",
         price: p!.price,
         imageUrl: p!.imageUrl,
         stock: p!.stock,
@@ -165,15 +179,40 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   );
 
   // 6. Categories
-  const rawCategories = await prisma.category.findMany({
+  const rawCats = await prisma.categoryLocale.findMany({
+    where: { locale: lang },
+    include: { category: true },
     orderBy: { name: "asc" },
   });
-  const categories: Category[] = rawCategories.map((c) => ({
-    id: c.id,
-    name: c.name,
+  const categories: Category[] = rawCats.map(({ category, name }) => ({
+    id: category.id,
+    name,
   }));
 
+  // 7. Legacy SubBanner
+  const rawSub = await prisma.subBannerLocale.findFirst({
+    where: { locale: lang },
+    include: { subBanner: true },
+  });
+  const subBannerData = rawSub
+    ? {
+        title: rawSub.title,
+        description: rawSub.description,
+        buttonText: rawSub.buttonText,
+        buttonLink: rawSub.subBanner.buttonLink,
+        img: rawSub.subBanner.imageUrl ?? "",
+      }
+    : null;
+
   return {
-    props: { banners, subBanners, featured, onSale, bestSellers, categories },
+    props: {
+      banners,
+      subBanners,
+      featured,
+      onSale,
+      bestSellers,
+      categories,
+      subBannerData,
+    },
   };
 };

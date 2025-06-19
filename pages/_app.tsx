@@ -1,6 +1,4 @@
 // pages/_app.tsx
-"use client";
-
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { AuthProvider } from "../context/AuthContext";
@@ -13,7 +11,11 @@ import {
 // สร้าง instance เดียวตลอดแอป
 const queryClient = new QueryClient();
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+// เปลี่ยนเป็น import จาก next-translate-plugin
+import appWithI18n from "next-translate/appWithI18n";
+import i18nConfig from "../i18n.json";
+
+function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
@@ -29,3 +31,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     </>
   );
 }
+
+// ห่อด้วย HOC จาก plugin
+export default appWithI18n(MyApp as any, i18nConfig);

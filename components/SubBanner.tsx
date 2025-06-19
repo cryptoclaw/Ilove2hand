@@ -1,26 +1,22 @@
-import { useEffect, useState } from "react";
+// components/SubBanner.tsx
+import React from "react";
 
-interface SubBannerData {
+export interface SubBannerProps {
   title: string;
   description: string;
   buttonText: string;
   buttonLink: string;
-  imageUrl?: string;
+  img: string;
 }
 
-export default function SubBanner() {
-  const [data, setData] = useState<SubBannerData | null>(null);
-
-  useEffect(() => {
-    fetch("/api/subbanner")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(console.error);
-  }, []);
-
-  if (!data) return null;
-
-  const hasImage = Boolean(data.imageUrl);
+export default function SubBanner({
+  title,
+  description,
+  buttonText,
+  buttonLink,
+  img,
+}: SubBannerProps) {
+  const hasImage = Boolean(img);
 
   return (
     <div
@@ -31,22 +27,20 @@ export default function SubBanner() {
         ${hasImage ? "bg-cover bg-center" : "bg-green-200"}
         h-40
       `}
-      style={
-        hasImage ? { backgroundImage: `url(${data.imageUrl})` } : undefined
-      }
+      style={hasImage ? { backgroundImage: `url(${img})` } : undefined}
     >
       {/* ข้อความลอยบนพื้นหลัง */}
       <div className="mb-2 md:mb-0 text-white text-center md:text-left">
-        <h2 className="text-lg sm:text-xl font-bold">{data.title}</h2>
-        <p className="mt-1 text-xs sm:text-sm">{data.description}</p>
+        <h2 className="text-lg sm:text-xl font-bold">{title}</h2>
+        <p className="mt-1 text-xs sm:text-sm">{description}</p>
       </div>
 
       <a
-        href={data.buttonLink}
+        href={buttonLink}
         className="w-full md:w-auto text-center px-3 py-1.5 sm:px-4 sm:py-2
                    bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
       >
-        {data.buttonText}
+        {buttonText}
       </a>
     </div>
   );

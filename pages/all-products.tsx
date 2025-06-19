@@ -1,7 +1,8 @@
 // pages/all-products.tsx
 import { GetServerSideProps } from "next";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useState, ChangeEvent } from "react";
+import useTranslation from "next-translate/useTranslation";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
@@ -20,15 +21,14 @@ export default function AllProductsPage({
   selectedCategory,
   discount,
 }: AllProductsProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ควบคุม search term
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  // เปลี่ยนหมวดหมู่ พร้อมคงสถานะ discount ถ้ามี
   const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const cat = e.target.value;
     const params = new URLSearchParams();
@@ -37,15 +37,14 @@ export default function AllProductsPage({
     router.push(`/all-products?${params.toString()}`);
   };
 
-  // กรองตามชื่อ + discount ถ้ามี (แต่ฝั่ง server ก็กรองให้แล้วนี่)
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <Layout title={discount ? "สินค้าลดราคา" : "สินค้าทั้งหมด"}>
+    <Layout title={discount ? t("onSale") : t("allProducts")}>
       <h1 className="text-3xl font-bold mb-4">
-        {discount ? "สินค้าลดราคา" : "สินค้าทั้งหมด"}
+        {discount ? t("onSale") : t("allProducts")}
       </h1>
 
       {/* Controls */}
@@ -54,7 +53,7 @@ export default function AllProductsPage({
           type="text"
           value={searchTerm}
           onChange={handleSearch}
-          placeholder="ค้นหาสินค้า..."
+          placeholder={t("searchPlaceholder")}
           className="flex-1 border rounded p-2"
         />
         <select
@@ -62,7 +61,7 @@ export default function AllProductsPage({
           onChange={handleCategoryChange}
           className="border rounded p-2"
         >
-          <option value="">-- ทุกหมวดหมู่ --</option>
+          <option value="">{t("allCategories")}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -77,7 +76,7 @@ export default function AllProductsPage({
           filtered.map((p) => <ProductCard key={p.id} product={p} />)
         ) : (
           <p className="col-span-full text-center text-gray-500">
-            ไม่พบสินค้าตามเงื่อนไข
+            {t("noProductsFound")}
           </p>
         )}
       </div>
@@ -87,45 +86,62 @@ export default function AllProductsPage({
 
 export const getServerSideProps: GetServerSideProps<AllProductsProps> = async ({
   query,
+  locale,
 }) => {
   const selectedCategory =
     typeof query.category === "string" ? query.category : null;
   const discount = query.discount === "1";
+  const lang = locale || "th";
 
-  // ดึงหมวดหมู่ทั้งหมด
+  // 1) ดึงหมวดหมู่พร้อม translation ตามภาษาที่เลือก
   const rawCategories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
+    include: {
+      translations: {
+        where: { locale: lang },
+        take: 1,
+      },
+    },
   });
-  const categories: Category[] = rawCategories.map((c) => ({
-    id: c.id,
-    name: c.name,
-  }));
+  const categories: Category[] = rawCategories
+    .map((c) => ({
+      id: c.id,
+      name: c.translations[0]?.name ?? "",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, lang));
 
-  // สร้าง where เงื่อนไขให้ดึงสินค้า
+  // 2) สร้างเงื่อนไขการค้นหาสินค้า
   const whereClause: any = {};
-  if (selectedCategory) {
-    whereClause.categoryId = selectedCategory;
-  }
-  if (discount) {
-    // ถ้าใช้ flag isOnSale ให้เปลี่ยนเป็น { isOnSale: true }
-    whereClause.salePrice = { not: null };
-  }
+  if (selectedCategory) whereClause.categoryId = selectedCategory;
+  if (discount) whereClause.salePrice = { not: null };
 
-  // ดึงสินค้า
+  // 3) ดึงสินค้า พร้อม translation
   const rawProducts = await prisma.product.findMany({
     where: whereClause,
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      price: true,
+      imageUrl: true,
+      stock: true,
+      salePrice: true,
+      categoryId: true,
+      isFeatured: true,
+      translations: {
+        where: { locale: lang },
+        take: 1,
+      },
+    },
   });
   const products: Product[] = rawProducts.map((p) => ({
     id: p.id,
-    name: p.name,
-    description: p.description,
+    name: p.translations[0]?.name ?? "",
+    description: p.translations[0]?.description ?? "",
     price: p.price,
     imageUrl: p.imageUrl,
     stock: p.stock,
-    salePrice: p.salePrice ?? null,
+    salePrice: p.salePrice,
     categoryId: p.categoryId ?? "",
-    isFeatured: p.isFeatured ?? false,
+    isFeatured: p.isFeatured,
   }));
 
   return {
