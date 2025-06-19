@@ -94,5 +94,46 @@
     "cardholder": "ชื่อผู้ถือบัตร",
     "processing": "กำลังดำเนินการ…",
     "payNow": "ชำระ {{total}} ฿"
+  },
+
+  "myOrders": "คำสั่งซื้อของฉัน",
+  "ordersLoading": "กำลังโหลดคำสั่งซื้อ…",
+  "ordersLoadError": "โหลดคำสั่งซื้อไม่สำเร็จ",
+  "orderNumber": "ออร์เดอร์ #{{id}}",
+  "noOrdersInStatus": "ไม่มีคำสั่งซื้อในสถานะ \"{{status}}\"",
+  "currency": "{{amount}} ฿",
+  "noImage": "ไม่มีรูป",
+  "confirmReceived": "ยืนยันว่าฉันได้รับสินค้าแล้ว",
+  "confirming": "กำลังยืนยัน…",
+  "status": {
+    "pending": "รอดำเนินการ",
+    "processing": "กำลังดำเนินการ",
+    "shipped": "จัดส่งแล้ว",
+    "completed": "สำเร็จ",
+    "cancelled": "ยกเลิกแล้ว"
+  },
+  "cart": {
+    "title": "ตะกร้าสินค้า",
+    "loading": "กำลังโหลด...",
+    "empty": "ตะกร้าว่างเปล่า",
+    "loginPrompt": "กรุณา",
+    "login": "เข้าสู่ระบบ",
+    "browse": "ดูสินค้าเพิ่มเติม",
+    "unitPrice": "ราคาต่อหน่วย: ฿{{price}}",
+    "lineTotal": "รวม: ฿{{total}}",
+    "subtotal": "ยอดรวมทั้งหมด:",
+    "remove": "ลบ",
+    "checkout": "ดำเนินการชำระเงิน",
+    "exceedStock": "จำนวนเกิน stock ที่มี (สูงสุด {{stock}})",
+    "error": "เกิดข้อผิดพลาด",
+    "currency": "฿{{amount}}"
+  },
+  "footer": {
+    "faq": "คำถามที่พบบ่อย",
+    "contact": "ติดต่อเรา",
+    "privacy": "ประกาศความเป็นส่วนตัว",
+    "cookies": "นโยบายคุกกี้",
+    "terms": "ข้อกำหนดและเงื่อนไข",
+    "rights": "Iconnex Thailand Developer. สงวนลิขสิทธิ์"
   }
 }
