@@ -86,5 +86,37 @@
     "cardholder": "Cardholder Name",
     "processing": "Processing…",
     "payNow": "Pay {{total}} ฿"
+  },
+  "myOrders": "My Orders",
+  "ordersLoading": "Loading orders…",
+  "ordersLoadError": "Failed to load orders",
+  "orderNumber": "Order #{{id}}",
+  "noOrdersInStatus": "No orders with status \"{{status}}\"",
+  "currency": "{{amount}} ฿",
+  "noImage": "No image",
+  "confirmReceived": "Confirm Received",
+  "confirming": "Confirming…",
+  "status": {
+    "pending": "Pending",
+    "processing": "Processing",
+    "shipped": "Shipped",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "loading": "Loading...",
+    "empty": "Your cart is empty",
+    "loginPrompt": "Please",
+    "login": "log in",
+    "browse": "Browse Products",
+    "unitPrice": "Unit price: ${{price}}",
+    "lineTotal": "Total: ${{total}}",
+    "subtotal": "Subtotal:",
+    "remove": "Remove",
+    "checkout": "Checkout",
+    "exceedStock": "Cannot exceed stock (max {{stock}})",
+    "error": "Error",
+    "currency": "฿{{amount}}"
   }
 }
