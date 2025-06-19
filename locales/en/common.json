@@ -118,5 +118,13 @@
     "exceedStock": "Cannot exceed stock (max {{stock}})",
     "error": "Error",
     "currency": "฿{{amount}}"
+  },
+  "footer": {
+    "faq": "FAQ",
+    "contact": "Contact Us",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookie Policy",
+    "terms": "Terms & Conditions",
+    "rights": "ICN_FREEZE. All Rights Reserved"
   }
 }

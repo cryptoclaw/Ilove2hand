@@ -127,5 +127,13 @@
     "exceedStock": "จำนวนเกิน stock ที่มี (สูงสุด {{stock}})",
     "error": "เกิดข้อผิดพลาด",
     "currency": "฿{{amount}}"
+  },
+  "footer": {
+    "faq": "คำถามที่พบบ่อย",
+    "contact": "ติดต่อเรา",
+    "privacy": "ประกาศความเป็นส่วนตัว",
+    "cookies": "นโยบายคุกกี้",
+    "terms": "ข้อกำหนดและเงื่อนไข",
+    "rights": "Iconnex Thailand Developer. สงวนลิขสิทธิ์"
   }
 }
