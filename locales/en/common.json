@@ -126,5 +126,15 @@
     "cookies": "Cookie Policy",
     "terms": "Terms & Conditions",
     "rights": "ICN_FREEZE. All Rights Reserved"
+  },
+  "coupons": {
+    "loading": "Loading coupons…",
+    "error": "Unable to load coupons",
+    "copy": "Copy",
+    "enterCode": "Enter code:",
+    "offAmt": "${value} OFF",
+    "offPct": "{value}% OFF",
+    "remaining": "{count} uses left",
+    "expires": "Expires {date}"
   }
 }

@@ -4,25 +4,27 @@ import useTranslation from "next-translate/useTranslation";
 import Layout from "@/components/Layout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Product as ProductType } from "@/types/product";
+import type { Product as ProductType } from "@/types/product";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
 interface ProductPageProps {
-  product: {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    salePrice: number | null;
-    stock: number;
-    imageUrl: string | null;
-  } | null;
+  product:
+    | {
+        id: string;
+        name: string;
+        description: string;
+        price: number;
+        salePrice: number | null;
+        stock: number;
+        imageUrl: string | null;
+      }
+    | null;
 }
 
 export default function ProductPage({ product }: ProductPageProps) {
-  const { t, lang } = useTranslation("common");
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { token } = useAuth();
 
@@ -98,53 +100,64 @@ export default function ProductPage({ product }: ProductPageProps) {
 
   return (
     <Layout title={product.name}>
-      <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/2">
+      <div className="w-full max-w-6xl mx-auto px-8 py-10 bg-white">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+          {/* ภาพสินค้า */}
+          <div>
             <img
               src={product.imageUrl || "/images/placeholder.png"}
               alt={product.name}
-              className="w-full h-auto object-cover rounded"
+              className="w-full h-auto object-cover"
             />
           </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-            <p className="text-gray-600 mb-4">{product.description}</p>
+
+          {/* รายละเอียดสินค้า */}
+          <div>
+            <h1 className="text-4xl font-extrabold mb-4">{product.name}</h1>
+            <p className="text-gray-700 mb-6">{product.description}</p>
+
             {product.salePrice != null ? (
-              <div className="mb-4">
-                <span className="text-2xl text-red-600 font-bold mr-2">
-                  ฿{product.salePrice}
+              <div className="flex items-baseline space-x-4 mb-6">
+                <span className="text-3xl text-red-600 font-bold">
+                  ฿ {product.salePrice}
                 </span>
-                <span className="text-xl text-gray-500 line-through">
-                  ฿{product.price}
+                <span className="text-lg text-gray-400 line-through">
+                  ฿ {product.price}
                 </span>
               </div>
             ) : (
-              <p className="text-xl text-green-700 mb-4">฿{product.price}</p>
+              <p className="text-3xl text-green-700 mb-6">
+                ฿ {product.price}
+              </p>
             )}
-            <p className="mb-4">
+
+            <p className="mb-4 text-sm text-gray-500">
               {t("stock")}: {product.stock}
             </p>
+
             {product.stock === 0 ? (
               <p className="text-red-600 font-semibold">{t("outOfStock")}</p>
             ) : (
-              <div className="mb-4">
-                <label className="block mb-1">{t("quantity")}:</label>
+              <div className="mb-6">
+                <label className="block mb-1 text-sm">{t("quantity")}:</label>
                 <input
                   type="number"
                   min={1}
                   max={product.stock}
                   value={qty}
                   onChange={(e) => setQty(Number(e.target.value))}
-                  className="w-20 border rounded px-2 py-1 text-center"
+                  className="w-24 border border-gray-300 rounded px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
-                {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+                {error && (
+                  <p className="text-red-500 text-sm mt-1">{error}</p>
+                )}
               </div>
             )}
+
             <button
               onClick={addToCart}
               disabled={loading || !!error || product.stock === 0}
-              className={`px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition ${
+              className={`px-6 py-3 rounded bg-blue-600 text-white hover:bg-blue-700 transition ${
                 loading || error || product.stock === 0
                   ? "opacity-50 cursor-not-allowed"
                   : ""
@@ -156,8 +169,9 @@ export default function ProductPage({ product }: ProductPageProps) {
                 ? t("adding")
                 : t("addToCart")}
             </button>
-            <div className="mt-4">
-              <Link href="/" className="text-blue-600 hover:underline">
+
+            <div className="mt-8">
+              <Link href="/" className="text-blue-600 hover:underline text-sm">
                 ← {t("backHome")}
               </Link>
             </div>
@@ -168,10 +182,9 @@ export default function ProductPage({ product }: ProductPageProps) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({
-  params,
-  locale,
-}) => {
+export const getServerSideProps: GetServerSideProps<
+  ProductPageProps
+> = async ({ params, locale }) => {
   const id = params?.id as string;
   const lang = locale ?? "th";
 

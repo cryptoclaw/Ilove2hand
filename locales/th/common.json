@@ -135,5 +135,15 @@
     "cookies": "นโยบายคุกกี้",
     "terms": "ข้อกำหนดและเงื่อนไข",
     "rights": "Iconnex Thailand Developer. สงวนลิขสิทธิ์"
+  },
+  "coupons": {
+    "loading": "กำลังโหลดคูปอง…",
+    "error": "ไม่สามารถโหลดคูปองได้",
+    "copy": "คัดลอก",
+    "enterCode": "กรอกโค้ด:",
+    "offAmt": "฿{value} OFF",
+    "offPct": "{value}% OFF",
+    "remaining": "เหลือการใช้งาน {count} ครั้ง",
+    "expires": "หมดอายุ {date}"
   }
 }

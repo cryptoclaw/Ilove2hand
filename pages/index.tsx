@@ -36,7 +36,7 @@ export default function HomePage({
   categories,
   subBannerData,
 }: HomeProps) {
-  const { t } = useTranslation("common");
+  const { t, lang } = useTranslation("common");
   return (
     <Layout title={t("siteTitle")}>
       {/* Hero Banner */}
@@ -79,10 +79,12 @@ export default function HomePage({
       </section>
 
       {/* Coupons */}
-      <section className="container py-10">
-        <h2 className="text-xl font-semibold mb-4">คูปอง</h2>
-        <CouponsCarousel />
-      </section>
+    <section className="container py-10">
+      <h2 className="text-xl font-semibold mb-4">
+        {t("coupons")}
+      </h2>
+      <CouponsCarousel />
+    </section>
 
       {/* Featured Products */}
       <section className="container py-6">

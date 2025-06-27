@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { MouseEvent } from "react";
+import useTranslation from "next-translate/useTranslation";
 
 // Mirror your Prisma model
 type Coupon = {
@@ -16,19 +17,21 @@ type Coupon = {
 };
 
 export default function CouponsCarousel() {
+  const { t, lang } = useTranslation("common");
+
   const { data, isLoading, isError } = useQuery<{ items: Coupon[] }>(
     {
       queryKey: ["coupons"],
       queryFn: () =>
-        fetch("/api/coupons")
+        fetch(`/api/coupons?locale=${lang}`)
           .then((res) => res.json()) as Promise<{ items: Coupon[] }>,
     }
   );
 
-  const coupons = data?.items ?? [];
+  if (isLoading) return <p>{t("coupons.loading")}</p>;
+  if (isError)   return <p>{t("coupons.error")}</p>;
 
-  if (isLoading) return <p>Loading coupons…</p>;
-  if (isError)   return <p>ไม่สามารถโหลดคูปองได้</p>;
+  const coupons = data?.items ?? [];
 
   function scroll(ev: MouseEvent, offset: number) {
     ev.preventDefault();
@@ -58,34 +61,43 @@ export default function CouponsCarousel() {
                 onClick={() => navigator.clipboard.writeText(c.code)}
                 className="absolute top-2 right-3 text-sm underline"
               >
-                Copy
+                {t("coupons.copy")}
               </button>
 
               {/* Discount label */}
               {c.discountType === "AMOUNT" ? (
                 <h4 className="text-2xl font-bold mb-2">
-                  ฿{c.discountValue} OFF
+                  {t("coupons.offAmt", { value: c.discountValue })}
                 </h4>
               ) : (
                 <h4 className="text-2xl font-bold mb-2">
-                  {c.discountValue}% OFF
+                  {t("coupons.offPct", { value: c.discountValue })}
                 </h4>
               )}
 
               {/* Code line */}
-              <p className="text-sm mb-1">กรอกโค้ด: {c.code}</p>
+              <p className="text-sm mb-1">
+                {t("coupons.enterCode")} {c.code}
+              </p>
 
               {/* Optional: remaining usage */}
               {c.usageLimit != null && (
                 <p className="text-xs text-gray-300 mb-0.5">
-                  เหลือการใช้งาน {c.usageLimit - c.usedCount} ครั้ง
+                  {t("coupons.remaining", {
+                    count: c.usageLimit - c.usedCount,
+                  })}
                 </p>
               )}
 
               {/* Optional: expiration date */}
               {c.expiresAt && (
                 <p className="text-xs text-gray-300">
-                  หมดอายุ {new Date(c.expiresAt).toLocaleDateString("th-TH")}
+                  {t("coupons.expires", {
+                    date: new Date(c.expiresAt).toLocaleDateString(
+                      lang === "th" ? "th-TH" : "en-US",
+                      { year: "numeric", month: "short", day: "numeric" }
+                    ),
+                  })}
                 </p>
               )}
             </div>
