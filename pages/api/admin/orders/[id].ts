@@ -1,40 +1,29 @@
 // pages/api/admin/orders/[id].ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import { getUserFromToken } from "@/lib/auth";
+import { getSessionUserFromReq } from "@/lib/auth";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // 1) Auth check
-  const authHeader = req.headers.authorization;
-  const user = await getUserFromToken(authHeader);
-  if (!user || user.role !== "ADMIN") {
-    return res.status(403).json({ error: "Forbidden" });
-  }
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // 1) ตรวจสิทธิ์แอดมินจากคุกกี้ HttpOnly
+  const user = await getSessionUserFromReq(req);
+if (!user || user.role !== "ADMIN") {
+  return res.status(403).json({ error: "Admin only" });
+}
 
-  // 2) Normalize id from query (could be string | string[])
+  // 2) ดึง id จาก query
   const rawId = req.query.id;
-  const id =
-    typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] : null;
-  if (!id) {
-    return res.status(400).json({ error: "Missing or invalid order ID" });
-  }
+  const id = typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] : null;
+  if (!id) return res.status(400).json({ error: "Missing or invalid order ID" });
 
-  // 3a) PATCH → update status
+  // 3a) PATCH → อัปเดตสถานะออเดอร์
   if (req.method === "PATCH") {
     const { status } = req.body as { status?: string };
-    const allowed = [
-      "PENDING",
-      "PROCESSING",
-      "SHIPPED",
-      "COMPLETED",
-      "CANCELLED",
-    ];
-    if (!status || !allowed.includes(status)) {
+
+    const allowed = ["PENDING", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED"] as const;
+    if (!status || !allowed.includes(status as any)) {
       return res.status(400).json({ error: "Invalid status value" });
     }
+
     try {
       const updated = await prisma.order.update({
         where: { id },
@@ -47,7 +36,7 @@ export default async function handler(
     }
   }
 
-  // 3b) DELETE → delete order + its items
+  // 3b) DELETE → ลบออเดอร์ (และรายการภายใน)
   if (req.method === "DELETE") {
     try {
       await prisma.$transaction([

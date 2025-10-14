@@ -21,6 +21,8 @@ model User {
   passwordResetTokens PasswordResetToken[]
   auctionsSelling     Auction[]            @relation("SellerAuctions")
   bids                Bid[]                @relation("UserBids")
+  googleId            String?  @unique
+  avatarUrl           String?
 }
 
 model Category {

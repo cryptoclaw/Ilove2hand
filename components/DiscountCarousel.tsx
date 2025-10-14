@@ -12,18 +12,24 @@ interface Props {
   items: Array<Product & { stock: number }>;
 }
 
+type CartListItem = {
+  id: string;
+  quantity: number;
+  product: { id: string };
+};
+
 export default function DiscountCarousel({ items }: Props) {
   const [idx, setIdx] = useState(0);
   const total = items.length;
-  const { token } = useAuth();
+
+  // ✅ ใช้ user เพื่อเช็คสถานะล็อกอิน (เบราว์เซอร์จะส่งคุกกี้ token ให้อัตโนมัติ)
+  const { user } = useAuth();
   const router = useRouter();
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  // เลือกจำนวนสินค้าที่จะแสดง ตามขนาดหน้าจอ
-  // ตั้งค่าเริ่มต้นเป็น 2 (mobile) แล้วอัปเดตใน useEffect
+  // แสดงจำนวนการ์ดตามขนาดหน้าจอ
   const [displayCount, setDisplayCount] = useState<number>(2);
   useEffect(() => {
-    // ฟังก์ชันคำนวณจำนวนสินค้าตามความกว้างหน้าจอ
     const updateCount = () => {
       const w = window.innerWidth;
       let count = 2;
@@ -33,9 +39,7 @@ export default function DiscountCarousel({ items }: Props) {
       else count = 6;
       setDisplayCount(Math.min(count, total));
     };
-    // รันทันทีตอน mount
     updateCount();
-    // ฟัง resize
     window.addEventListener("resize", updateCount);
     return () => window.removeEventListener("resize", updateCount);
   }, [total]);
@@ -45,7 +49,6 @@ export default function DiscountCarousel({ items }: Props) {
   const prev = () => setIdx((i) => (i - displayCount + total) % total);
   const next = () => setIdx((i) => (i + displayCount) % total);
 
-  // สร้างชุดสินค้าที่จะแสดงตาม idx และ displayCount
   const visible = Array.from({ length: displayCount }, (_, i) => {
     const index = (idx + i) % total;
     return items[index];
@@ -57,22 +60,45 @@ export default function DiscountCarousel({ items }: Props) {
   ) => {
     e.stopPropagation();
     if (p.stock === 0) return;
-    if (!token) {
+
+    // ✅ ถ้าไม่ล็อกอินให้ไปหน้า login
+    if (!user) {
       router.push("/login");
       return;
     }
+
     setAddingId(p.id);
     try {
+      // ✅ ดึงตะกร้า (ไม่ต้องส่ง Authorization header)
+      const cartRes = await fetch("/api/cart");
+      if (!cartRes.ok) throw new Error("Cannot fetch cart");
+      const { items: cartItems } = (await cartRes.json()) as {
+        items: CartListItem[];
+      };
+
+      // ✅ หา quantity ปัจจุบันจาก item.product.id (ไม่ใช่ productId)
+      const currentQty =
+        cartItems.find((i) => i.product?.id === p.id)?.quantity ?? 0;
+
+      if (currentQty + 1 > p.stock) {
+        alert("จำนวนสินค้าเกินสต็อกที่มี");
+        setAddingId(null);
+        return;
+      }
+
+      // ✅ เพิ่มลงตะกร้า (ให้เบราว์เซอร์ส่งคุกกี้ token เอง)
       const res = await fetch("/api/cart", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: p.id, quantity: 1 }),
       });
       if (res.ok) router.push("/cart");
-    } catch {
+      else {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to add to cart");
+      }
+    } catch (err) {
+      console.error(err);
       alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
     } finally {
       setAddingId(null);

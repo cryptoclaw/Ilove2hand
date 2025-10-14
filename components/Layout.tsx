@@ -17,7 +17,7 @@ interface LayoutProps {
 
 export default function Layout({
   children,
-  title = "ICN_FREEZE",
+  title = "2Hand",
 }: LayoutProps) {
   const [showPromo, setShowPromo] = useState(false);
   const [showCookieConsent, setShowCookieConsent] = useState(false);

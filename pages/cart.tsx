@@ -15,7 +15,7 @@ interface CartItem {
   quantity: number;
   product: {
     id: string;
-    name: string; // ฝั่ง API ควรดึงแปลตาม locale มาให้
+    name: string; // API ควรส่งชื่อที่แปลตาม locale มาแล้ว
     price: number;
     salePrice?: number | null;
     imageUrl?: string | null;
@@ -26,28 +26,28 @@ interface CartItem {
 export default function CartPage() {
   const { t, lang } = useTranslation("common");
   const router = useRouter();
-  const { token } = useAuth();
+  const { user } = useAuth(); // ✅ ใช้ user จาก context (คุกกี้ HTTP-only)
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadCart = async () => {
-    if (!token) return;
+    if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/cart?locale=${lang}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // ไม่ต้องใส่ Authorization header — เบราว์เซอร์ส่งคุกกี้ไปให้เอง
+      const res = await fetch(`/api/cart?locale=${lang}`);
+      if (!res.ok) throw new Error("Failed to load cart");
       const data = await res.json();
       setItems(data.items || []);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
-    if (!token) return;
+    if (!user) return;
     if (quantity < 1) return;
 
     const item = items.find((i) => i.id === itemId);
@@ -60,30 +60,25 @@ export default function CartPage() {
 
     const res = await fetch("/api/cart", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId, quantity }),
     });
+
     if (res.ok) {
       setItems((prev) =>
         prev.map((i) => (i.id === itemId ? { ...i, quantity } : i))
       );
     } else {
-      const err = await res.json();
-      alert(t("cart.error") + ": " + err.error);
+      const err = await res.json().catch(() => ({}));
+      alert((t("cart.error") as string) + ": " + (err.error || "Unknown"));
     }
   };
 
   const removeItem = async (itemId: string) => {
-    if (!token) return;
+    if (!user) return;
     await fetch("/api/cart", {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId }),
     });
     loadCart();
@@ -91,15 +86,16 @@ export default function CartPage() {
 
   useEffect(() => {
     loadCart();
-  }, [token, lang]);
+    // โหลดใหม่เมื่อเปลี่ยนภาษา/ผู้ใช้
+  }, [user, lang]);
 
   const total = items.reduce((sum, item) => {
     const unit = item.product.salePrice ?? item.product.price;
     return sum + unit * item.quantity;
   }, 0);
 
-  // ถ้ายังไม่ล็อกอิน
-  if (!token) {
+  // ยังไม่ล็อกอิน
+  if (!user) {
     return (
       <Layout title={t("cart.title")}>
         <div className="py-20 text-center">
@@ -150,6 +146,7 @@ export default function CartPage() {
                       className="object-cover"
                     />
                   </div>
+
                   <div className="flex-1 px-4">
                     <Link
                       href={`/products/${item.product.id}`}
@@ -157,9 +154,11 @@ export default function CartPage() {
                     >
                       {item.product.name}
                     </Link>
+
                     <p className="text-gray-500 text-sm mt-1">
                       {t("cart.unitPrice", { price: unit })}
                     </p>
+
                     <div className="flex items-center mt-2 space-x-2">
                       <button
                         onClick={() =>
@@ -169,6 +168,7 @@ export default function CartPage() {
                       >
                         –
                       </button>
+
                       <input
                         type="number"
                         className="w-12 border text-center rounded"
@@ -179,12 +179,13 @@ export default function CartPage() {
                           updateQuantity(
                             item.id,
                             Math.min(
-                              Math.max(1, +e.target.value),
+                              Math.max(1, Number(e.target.value || 1)),
                               item.product.stock
                             )
                           )
                         }
                       />
+
                       <button
                         onClick={() =>
                           updateQuantity(item.id, item.quantity + 1)
@@ -195,11 +196,10 @@ export default function CartPage() {
                       </button>
                     </div>
                   </div>
+
                   <div className="text-right">
                     <p className="font-semibold">
-                      {t("cart.lineTotal", {
-                        total: unit * item.quantity,
-                      })}
+                      {t("cart.lineTotal", { total: unit * item.quantity })}
                     </p>
                     <button
                       onClick={() => removeItem(item.id)}

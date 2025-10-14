@@ -4,7 +4,6 @@ import useTranslation from "next-translate/useTranslation";
 import Layout from "@/components/Layout";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import type { Product as ProductType } from "@/types/product";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -26,7 +25,7 @@ interface ProductPageProps {
 export default function ProductPage({ product }: ProductPageProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const { token } = useAuth();
+  const { user } = useAuth(); // ไม่มี token แล้ว
 
   if (!product) {
     return (
@@ -61,18 +60,21 @@ export default function ProductPage({ product }: ProductPageProps) {
   }, [qty, product.stock, t]);
 
   const addToCart = async () => {
-    if (!token) {
+    if (!user) {
       router.push("/login");
       return;
     }
     if (error || product.stock === 0) return;
+
     setLoading(true);
     try {
+      // ดึงตะกร้าด้วยคุกกี้ HttpOnly
       const cartRes = await fetch("/api/cart", {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
       if (!cartRes.ok) throw new Error(t("cartFetchError"));
       const { items } = await cartRes.json();
+
       const inCart = items.find((i: any) => i.productId === product.id);
       const current = inCart?.quantity ?? 0;
       if (current + qty > product.stock) {
@@ -81,12 +83,11 @@ export default function ProductPage({ product }: ProductPageProps) {
         return;
       }
 
+      // เพิ่มของลงตะกร้า
       const res = await fetch("/api/cart", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: product.id, quantity: qty }),
       });
       if (!res.ok) throw new Error(t("addCartError"));
@@ -126,9 +127,7 @@ export default function ProductPage({ product }: ProductPageProps) {
                 </span>
               </div>
             ) : (
-              <p className="text-3xl text-green-700 mb-6">
-                ฿ {product.price}
-              </p>
+              <p className="text-3xl text-green-700 mb-6">฿ {product.price}</p>
             )}
 
             <p className="mb-4 text-sm text-gray-500">
@@ -148,9 +147,7 @@ export default function ProductPage({ product }: ProductPageProps) {
                   onChange={(e) => setQty(Number(e.target.value))}
                   className="w-24 border border-gray-300 rounded px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
-                {error && (
-                  <p className="text-red-500 text-sm mt-1">{error}</p>
-                )}
+                {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
               </div>
             )}
 
@@ -182,21 +179,19 @@ export default function ProductPage({ product }: ProductPageProps) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<
-  ProductPageProps
-> = async ({ params, locale }) => {
+export const getServerSideProps: GetServerSideProps<ProductPageProps> = async ({
+  params,
+  locale,
+}) => {
   const id = params?.id as string;
   const lang = locale ?? "th";
 
   const raw = await prisma.product.findUnique({
     where: { id },
-    include: {
-      translations: { where: { locale: lang }, take: 1 },
-    },
+    include: { translations: { where: { locale: lang }, take: 1 } },
   });
-  if (!raw) {
-    return { props: { product: null } };
-  }
+
+  if (!raw) return { props: { product: null } };
 
   const trans = raw.translations[0];
   return {

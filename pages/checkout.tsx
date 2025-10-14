@@ -6,14 +6,8 @@ import Layout from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import ProvinceSelect from "@/components/ProvinceSelect";
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
 import useTranslation from "next-translate/useTranslation";
+import Image from "next/image";
 
 // Types
 interface CartItem {
@@ -45,13 +39,9 @@ type AddressPayload = {
   country: string;
 };
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
-
 export default function CheckoutPage() {
   const { t } = useTranslation("common");
-  const { token } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,9 +55,11 @@ export default function CheckoutPage() {
     postalCode: "",
     country: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState<
-    "bank_transfer" | "credit_card" | "cod"
-  >("bank_transfer");
+
+  // เฉพาะวิธีจ่ายเงินที่ไม่ใช้ Stripe
+  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "cod">(
+    "bank_transfer"
+  );
   const [slipFile, setSlipFile] = useState<File | null>(null);
 
   // coupon
@@ -76,19 +68,19 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       router.push("/login");
       return;
     }
     setLoading(true);
     fetch("/api/cart", {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include", // ใช้คุกกี้ HttpOnly
     })
       .then((r) => r.json())
       .then((data) => setItems(data.items || []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [token, router]);
+  }, [user, router]);
 
   const updateQuantity = async (itemId: string, newQty: number) => {
     const item = items.find((i) => i.id === itemId);
@@ -104,13 +96,12 @@ export default function CheckoutPage() {
     setItems((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, quantity: newQty } : i))
     );
-    await fetch(`/api/cart/${itemId}`, {
+
+    await fetch("/api/cart", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ quantity: newQty }),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId, quantity: newQty }),
     });
   };
 
@@ -128,10 +119,8 @@ export default function CheckoutPage() {
     }
     const res = await fetch("/api/coupons", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: couponCode.trim() }),
     });
     if (!res.ok) {
@@ -144,7 +133,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const createFormOrder = async (method: string) => {
+  const createFormOrder = async (method: "bank_transfer" | "cod") => {
     const orderItems: OrderItemPayload[] = items.map((i) => ({
       productId: i.product.id,
       quantity: i.quantity,
@@ -160,16 +149,23 @@ export default function CheckoutPage() {
     }
     return fetch("/api/admin/orders", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
       body: fd,
     });
   };
 
+  if (!user) {
+    return (
+      <Layout title={t("checkout.title")}>
+        <p className="p-6">{t("cart.loginPrompt")}</p>
+      </Layout>
+    );
+  }
   if (loading) return <p>{t("checkout.loading")}</p>;
 
   return (
     <Layout title={t("checkout.title")}>
-      <h1 className="text-3xl font-bold mb-6">{t("checkout.heading")}</h1>
+      <h1 className="text-3xl font-bold mb-6">{t("checkout.title")}</h1>
 
       {/* Cart items */}
       <div className="space-y-4 mb-6">
@@ -177,11 +173,14 @@ export default function CheckoutPage() {
           const unit = i.product.salePrice ?? i.product.price;
           return (
             <div key={i.id} className="flex items-center border p-4 rounded">
-              <img
-                src={i.product.imageUrl || "/images/placeholder.png"}
-                alt={i.product.name}
-                className="w-16 h-16 object-cover rounded mr-4"
-              />
+              <div className="w-16 h-16 relative mr-4">
+                <Image
+                  src={i.product.imageUrl || "/images/placeholder.png"}
+                  alt={i.product.name}
+                  fill
+                  className="object-cover rounded"
+                />
+              </div>
               <div className="flex-1">
                 <p className="font-medium">{i.product.name}</p>
                 <p className="text-gray-600">
@@ -304,7 +303,7 @@ export default function CheckoutPage() {
         />
       </div>
 
-      {/* Payment method */}
+      {/* Payment method (Bank transfer / COD) */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold mb-2">
           {t("checkout.paymentHeading")}
@@ -315,7 +314,6 @@ export default function CheckoutPage() {
           className="w-full border p-2 rounded"
         >
           <option value="bank_transfer">{t("checkout.payBank")}</option>
-          <option value="credit_card">{t("checkout.payCard")}</option>
           <option value="cod">{t("checkout.payCod")}</option>
         </select>
 
@@ -332,10 +330,12 @@ export default function CheckoutPage() {
               className="border p-2 rounded w-full"
             />
             <div className="flex justify-center mt-4">
-              <img
+              <Image
                 src="/images/1.png"
                 alt="QR Code"
-                className="w-56 h-56 object-contain"
+                width={224}
+                height={224}
+                className="object-contain"
               />
             </div>
             <div className="flex justify-end mt-4">
@@ -357,21 +357,6 @@ export default function CheckoutPage() {
               </button>
             </div>
           </div>
-        )}
-
-        {/* Credit card */}
-        {paymentMethod === "credit_card" && (
-          <Elements stripe={stripePromise}>
-            <CreditCardForm
-              orderItems={items.map((i) => ({
-                productId: i.product.id,
-                quantity: i.quantity,
-                priceAtPurchase: i.product.salePrice ?? i.product.price,
-              }))}
-              address={address}
-              total={total}
-            />
-          </Elements>
         )}
 
         {/* Cash on delivery */}
@@ -397,111 +382,5 @@ export default function CheckoutPage() {
         )}
       </div>
     </Layout>
-  );
-}
-
-// CreditCardForm component below (same pattern with t("…") for all text)
-type PaymentFormProps = {
-  orderItems: OrderItemPayload[];
-  address: AddressPayload;
-  total: number;
-};
-
-function CreditCardForm({ orderItems, address, total }: PaymentFormProps) {
-  const { t } = useTranslation("common");
-  const stripe = useStripe();
-  const elements = useElements();
-  const { token } = useAuth();
-  const router = useRouter();
-  const [processing, setProcessing] = useState(false);
-  const [cardholder, setCardholder] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setProcessing(true);
-
-    const { clientSecret, error: intentError } = await fetch(
-      "/api/payments/create-intent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ amount: total * 100 }),
-      }
-    ).then((r) => r.json());
-
-    if (intentError) {
-      alert(intentError);
-      setProcessing(false);
-      return;
-    }
-
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret,
-      {
-        payment_method: {
-          card: elements.getElement(CardElement)!,
-          billing_details: { name: cardholder },
-        },
-      }
-    );
-
-    if (error) {
-      alert(error.message);
-      setProcessing(false);
-      return;
-    }
-
-    if (paymentIntent?.status === "succeeded") {
-      const res = await fetch("/api/admin/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          items: orderItems,
-          ...address,
-          paymentMethod: "credit_card",
-          slipUrl: null,
-        }),
-      });
-      if (res.ok) router.push("/success");
-      else {
-        const err = await res.json();
-        alert(t("checkout.orderError", { message: err.error }));
-      }
-    }
-    setProcessing(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <input
-          type="text"
-          placeholder={t("checkout.cardholder")}
-          value={cardholder}
-          onChange={(e) => setCardholder(e.target.value)}
-          className="border p-2 rounded w-full mb-3"
-          required
-        />
-        <CardElement className="border p-2 rounded w-full" />
-      </div>
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={!stripe || processing}
-          className="px-6 py-3 bg-blue-600 text-white rounded disabled:opacity-50"
-        >
-          {processing
-            ? t("checkout.processing")
-            : t("checkout.payNow", { total })}
-        </button>
-      </div>
-    </form>
   );
 }

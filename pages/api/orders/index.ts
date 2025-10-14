@@ -1,17 +1,18 @@
 // pages/api/orders/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import { getUserFromToken } from "@/lib/auth";
+
+import { getSessionUserFromReq } from "@/lib/auth";
+
+
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // 1. ดึง user จาก token
-  const user = await getUserFromToken(req.headers.authorization);
-  if (!user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  // 1. ดึง user จาก คุกกี้/เฮดเดอร์
+  const user = await getSessionUserFromReq(req);
+if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   // 2. ใช้ user.id ในการ query
   if (req.method === "GET") {

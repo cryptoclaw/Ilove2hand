@@ -10,7 +10,7 @@ interface LayoutProps {
 
 export default function Layout({
   children,
-  title = "ICN_FREEZE",
+  title = "2Hand",
 }: LayoutProps) {
   // state ควบคุมการโชว์โปรโมชัน
   const [showPromo, setShowPromo] = useState(false);

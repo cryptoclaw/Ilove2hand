@@ -46,7 +46,7 @@ export default function AdminSidebar() {
       { label: "Dashboard", href: "/admin/dashboard", icon: <BarChart2 size={20} /> },
       { label: "Edited Pages", href: "/admin/home-manage", icon: <Settings size={20} /> },
       { label: "Order Management", href: "/admin/orders", icon: <ClipboardList size={20} /> },
-      { label: "Suppliers", href: "/admin/suppliers", icon: <Truck size={20} /> },
+      
       { label: "Coupon", href: "/admin/coupons", icon: <Tag size={20} /> },
       { label: "Contact", href: "/admin/qa", icon: <MessageSquare size={20} /> },
       // 🔥 เมนูจัดการประมูล
@@ -136,9 +136,9 @@ export default function AdminSidebar() {
         <div>
           <div className="mb-8 flex items-center space-x-2">
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-              <span className="text-green-800 font-bold text-xl">C</span>
+              <span className="text-green-800 font-bold text-xl">H</span>
             </div>
-            <span className="text-xl font-semibold">ICONNEX THAILAND</span>
+            <span className="text-xl font-semibold">2hand</span>
           </div>
           <nav className="space-y-4">
             {navItems.map((item) => renderItem(item))}

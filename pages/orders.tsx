@@ -34,38 +34,33 @@ const STATUS_TABS = [
 
 export default function OrdersPage() {
   const { t, lang } = useTranslation("common");
-  const { token } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] =
     useState<(typeof STATUS_TABS)[number]>("pending");
 
-  // SWR fetcher includes locale in query
+  // SWR fetcher (แนบคุกกี้ HttpOnly เสมอ)
   const fetcher = (url: string) =>
-    fetch(`${url}?locale=${lang}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(`${url}?locale=${lang}`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error(t("ordersLoadError"));
         return res.json();
       })
       .then((data) => data.orders as OrderSummary[]);
 
-  // only fetch when we have a token
-  const {
-    data: orders,
-    error,
-    mutate,
-  } = useSWR(token ? "/api/orders" : null, fetcher, {
-    revalidateOnFocus: true,
-    refreshInterval: 60000,
-  });
+  // โหลดเมื่อมี user (ล็อกอินแล้ว) เท่านั้น
+  const { data: orders, error, mutate } = useSWR(
+    user ? "/api/orders" : null,
+    fetcher,
+    { revalidateOnFocus: true, refreshInterval: 60000 }
+  );
 
-  // redirect if not logged in
+  // รีไดเรกต์ไปหน้า login ถ้ายังไม่ล็อกอิน
   useEffect(() => {
-    if (token === null) router.replace("/login");
-  }, [token, router]);
-  if (token === null) return null;
+    if (!authLoading && !user) router.replace("/login");
+  }, [authLoading, user, router]);
+  if (authLoading || !user) return null;
 
   // loading / error states
   if (error) {
@@ -98,13 +93,12 @@ export default function OrdersPage() {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "completed" }),
       });
       if (!res.ok) throw new Error();
+      // อัปเดตแคชแบบ optimistic
       mutate(
         orders.map((o) =>
           o.id === orderId ? { ...o, status: "COMPLETED" } : o
