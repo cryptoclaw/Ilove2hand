@@ -8,9 +8,10 @@
 
   "nav": {
     "home": "Home",
-    "products": "Products",
-    "about": "About Us",
-    "qa": "Q/A"
+    "products": "All Products",
+    "auctions": "Auctions",
+    "about": "Contact",
+    "qa": "Q&A"
   },
 
   "orders": "Orders",

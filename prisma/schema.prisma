@@ -19,9 +19,10 @@ model User {
   cart                Cart?
   orders              Order[]
   passwordResetTokens PasswordResetToken[]
+  auctionsSelling     Auction[]            @relation("SellerAuctions")
+  bids                Bid[]                @relation("UserBids")
 }
 
-/// Categories with locales
 model Category {
   id           String             @id @default(uuid())
   createdAt    DateTime           @default(now())
@@ -34,12 +35,12 @@ model CategoryLocale {
   id         String    @id @default(uuid())
   category   Category  @relation(fields: [categoryId], references: [id])
   categoryId String
-  locale     String    // 'th' | 'en'
+  locale     String
   name       String
+
   @@unique([categoryId, locale])
 }
 
-/// Products with locales
 model Product {
   id           String              @id @default(uuid())
   price        Float
@@ -54,15 +55,17 @@ model Product {
   cartItems    CartItem[]
   orderItems   OrderItem[]
   translations ProductLocale[]
+  auctions     Auction[]           @relation("ProductAuctions")
 }
 
 model ProductLocale {
   id          String    @id @default(uuid())
   product     Product   @relation(fields: [productId], references: [id])
   productId   String
-  locale      String    // 'th' | 'en'
+  locale      String
   name        String
   description String?
+
   @@unique([productId, locale])
 }
 
@@ -82,6 +85,7 @@ model CartItem {
   quantity  Int     @default(1)
   cart      Cart    @relation(fields: [cartId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
+
   @@unique([cartId, productId])
 }
 
@@ -123,19 +127,20 @@ model Coupon {
   discountType  String
   discountValue Float
   usageLimit    Int?
-  usedCount     Int       @default(0)
+  usedCount     Int              @default(0)
   expiresAt     DateTime?
   translations  CouponLocale[]
   orders        Order[]
 }
 
 model CouponLocale {
-  id         String  @id @default(uuid())
-  coupon     Coupon  @relation(fields: [couponId], references: [id])
-  couponId   String
-  locale     String  // e.g. 'th' | 'en'
-  title      String
+  id          String  @id @default(uuid())
+  coupon      Coupon  @relation(fields: [couponId], references: [id])
+  couponId    String
+  locale      String
+  title       String
   description String?
+
   @@unique([couponId, locale])
 }
 
@@ -160,7 +165,6 @@ model AuditLog {
   timestamp   DateTime @default(now())
 }
 
-/// FAQ with locales
 model Faq {
   id           String        @id @default(uuid())
   createdAt    DateTime      @default(now())
@@ -171,13 +175,13 @@ model FaqLocale {
   id       String @id @default(uuid())
   faq      Faq    @relation(fields: [faqId], references: [id])
   faqId    String
-  locale   String // 'th' | 'en'
+  locale   String
   question String
   answer   String?
+
   @@unique([faqId, locale])
 }
 
-/// Banner with locales
 model Banner {
   id           String           @id @default(uuid())
   imageUrl     String
@@ -192,14 +196,14 @@ model BannerLocale {
   id          String  @id @default(uuid())
   banner      Banner  @relation(fields: [bannerId], references: [id])
   bannerId    String
-  locale      String  // 'th' | 'en'
+  locale      String
   title       String?
   sub         String?
   description String?
+
   @@unique([bannerId, locale])
 }
 
-/// SubBanner with locales
 model SubBanner {
   id           String              @id @default(uuid())
   buttonLink   String
@@ -213,10 +217,11 @@ model SubBannerLocale {
   id          String     @id @default(uuid())
   subBanner   SubBanner  @relation(fields: [subBannerId], references: [id])
   subBannerId String
-  locale      String     // 'th' | 'en'
+  locale      String
   title       String
   description String
   buttonText  String
+
   @@unique([subBannerId, locale])
 }
 
@@ -237,4 +242,49 @@ model Supplier {
   unitPrice   Float    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+enum AuctionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELED
+}
+
+model Auction {
+  id            String         @id @default(uuid())
+  productId     String
+  sellerId      String
+  winnerBidId   String?         @unique
+  title         String
+  description   String?
+  startPrice    Int
+  currentPrice  Int             @default(0)
+  bidIncrement  Int             @default(10)
+  startAt       DateTime
+  endAt         DateTime
+  status        AuctionStatus   @default(SCHEDULED)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  product       Product         @relation("ProductAuctions", fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  seller        User            @relation("SellerAuctions", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  bids          Bid[]
+  winnerBid     Bid?            @relation("WinnerBid", fields: [winnerBidId], references: [id])
+
+  @@index([status, endAt])
+  @@index([productId])
+  @@index([sellerId])
+}
+
+model Bid {
+  id         String   @id @default(uuid())
+  auctionId  String
+  userId     String
+  amount     Int
+  createdAt  DateTime @default(now())
+  auction    Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bidder     User     @relation("UserBids", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  winningFor Auction? @relation("WinnerBid")
+
+  @@index([auctionId, amount])
 }

@@ -117,11 +117,8 @@ export default function HomeManagePage() {
 }
 
 // --- Create Product Section ---
+// --- Create Product Section (แก้ใหม่ ใช้ upload ก่อน แล้วส่ง JSON) ---
 function CreateProductSection() {
-  // โค้ดยังคงเหมือนเดิม
-  // ใส่ max width และ spacing ให้ดูดีตามดีไซน์
-  // ... ใช้โค้ดเดิมของคุณ
-  // เพิ่ม div ห่อ form ด้วย className="max-w-xl"
   const [form, setForm] = useState({
     nameTh: "",
     nameEn: "",
@@ -131,12 +128,15 @@ function CreateProductSection() {
     salePrice: "",
     stock: "",
     categoryId: "",
+    imageUrl: "", // เก็บ URL หลังอัปโหลด
   });
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    // ดึงหมวดหมู่ภาษาไทย (หรือใช้ locale param ตามต้องการ)
     fetch("/api/categories?locale=th")
       .then((r) => r.json())
       .then((data) => setCategories(data))
@@ -148,49 +148,64 @@ function CreateProductSection() {
   ) => {
     const { name, value, files } = e.target as any;
     if (name === "image" && files) {
-      setFile(files[0]);
+      const f = files[0] as File;
+      setFile(f);
+      setPreview(URL.createObjectURL(f));
     } else {
       setForm((f) => ({ ...f, [name]: value }));
     }
   };
 
+  // อัปโหลดไฟล์ไปรับ URL จาก /api/admin/uploads
+  const uploadIfNeeded = async (): Promise<string> => {
+    if (!file) return form.imageUrl || "";
+    const fd = new FormData();
+    fd.append("file", file);
+    setUploading(true);
+    const r = await fetch("/api/admin/uploads", { method: "POST", body: fd });
+    const js = await r.json().catch(() => ({}));
+    setUploading(false);
+    if (!r.ok) throw new Error(js.error || "Upload failed");
+    return js.url as string;
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const {
-      nameTh,
-      nameEn,
-      descTh,
-      descEn,
-      price,
-      salePrice,
-      stock,
-      categoryId,
-    } = form;
-
-    if (!nameTh.trim() || !nameEn.trim()) {
+    if (!form.nameTh.trim() || !form.nameEn.trim()) {
       return alert("กรุณากรอกชื่อสินค้า ทั้งสองภาษา");
     }
+    if (!form.price || Number(form.price) <= 0) {
+      return alert("กรุณากรอกราคาให้ถูกต้อง (> 0)");
+    }
+    if (!form.stock || Number(form.stock) < 0) {
+      return alert("สต็อกต้องเป็นเลขศูนย์หรือมากกว่า");
+    }
 
-    const data = new FormData();
-    data.append("nameTh", nameTh);
-    data.append("nameEn", nameEn);
-    data.append("descTh", descTh);
-    data.append("descEn", descEn);
-    data.append("price", price);
-    if (salePrice) data.append("salePrice", salePrice);
-    data.append("stock", stock);
-    if (categoryId) data.append("categoryId", categoryId);
-    if (file) data.append("image", file);
+    try {
+      setSaving(true);
+      const imageUrl = await uploadIfNeeded();
 
-    const res = await fetch("/api/products", {
-      method: "POST",
-      body: data,
-    });
+      // ส่ง JSON ไป /api/products (หรือ /api/admin/products ถ้าคุณตั้งไว้)
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nameTh: form.nameTh.trim(),
+          nameEn: form.nameEn.trim(),
+          descTh: form.descTh.trim() || null,
+          descEn: form.descEn.trim() || null,
+          price: Number(form.price),
+          salePrice: form.salePrice ? Number(form.salePrice) : null,
+          stock: Number(form.stock),
+          categoryId: form.categoryId || null,
+          imageUrl: imageUrl || null,
+        }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err.error || "Error creating product");
-    } else {
+      const js = await res.json().catch(() => ({}));
+      setSaving(false);
+      if (!res.ok) return alert(js.error || "Error creating product");
+
       alert("Created!");
       setForm({
         nameTh: "",
@@ -201,8 +216,13 @@ function CreateProductSection() {
         salePrice: "",
         stock: "",
         categoryId: "",
+        imageUrl: "",
       });
       setFile(null);
+      setPreview("");
+    } catch (err: any) {
+      setSaving(false);
+      alert(err?.message || "เกิดข้อผิดพลาด");
     }
   };
 
@@ -211,6 +231,7 @@ function CreateProductSection() {
       <h2 className="text-2xl font-semibold mb-6">
         สร้างสินค้าใหม่ / Create New Product
       </h2>
+
       <form onSubmit={onSubmit} className="space-y-4">
         <input
           name="nameTh"
@@ -242,62 +263,86 @@ function CreateProductSection() {
           placeholder="Description (EN)"
           className="w-full border rounded p-3"
         />
-        <input
-          name="price"
-          type="number"
-          value={form.price}
-          onChange={onChange}
-          placeholder="ราคา"
-          required
-          className="w-full border rounded p-3"
-        />
-        <input
-          name="salePrice"
-          type="number"
-          value={form.salePrice}
-          onChange={onChange}
-          placeholder="ราคาลด (ถ้ามี)"
-          className="w-full border rounded p-3"
-        />
-        <input
-          name="stock"
-          type="number"
-          value={form.stock}
-          onChange={onChange}
-          placeholder="จำนวนสต็อก"
-          required
-          className="w-full border rounded p-3"
-        />
-        <select
-          name="categoryId"
-          value={form.categoryId}
-          onChange={onChange}
-          className="w-full border rounded p-3"
-        >
-          <option value="">-- เลือกหมวดหมู่ --</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <input
-          name="image"
-          type="file"
-          accept="image/*"
-          onChange={onChange}
-          className="w-full border rounded p-3"
-        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            name="price"
+            type="number"
+            min={1}
+            value={form.price}
+            onChange={onChange}
+            placeholder="ราคา"
+            required
+            className="w-full border rounded p-3"
+          />
+          <input
+            name="salePrice"
+            type="number"
+            min={0}
+            value={form.salePrice}
+            onChange={onChange}
+            placeholder="ราคาลด (ถ้ามี)"
+            className="w-full border rounded p-3"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            name="stock"
+            type="number"
+            min={0}
+            value={form.stock}
+            onChange={onChange}
+            placeholder="จำนวนสต็อก"
+            required
+            className="w-full border rounded p-3"
+          />
+          <select
+            name="categoryId"
+            value={form.categoryId}
+            onChange={onChange}
+            className="w-full border rounded p-3"
+          >
+            <option value="">-- เลือกหมวดหมู่ --</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm text-gray-600">Product image</label>
+          <input
+            name="image"
+            type="file"
+            accept="image/*"
+            onChange={onChange}
+            className="w-full border rounded p-3"
+          />
+          {preview && (
+            <img
+              src={preview}
+              alt="preview"
+              className="rounded-xl max-h-48 object-cover"
+            />
+          )}
+          {uploading && <div className="text-xs text-gray-500">Uploading…</div>}
+        </div>
+
         <button
           type="submit"
-          className="bg-green-600 text-white rounded px-5 py-3 hover:bg-green-700 transition"
+          disabled={saving || uploading}
+          className="bg-green-600 text-white rounded px-5 py-3 hover:bg-green-700 transition disabled:opacity-50"
         >
-          บันทึก / Save
+          {saving ? "Saving…" : "บันทึก / Save"}
         </button>
       </form>
     </div>
   );
 }
+
 // --- Manage Product Section ---
 
 function ManageProductSection() {
@@ -305,6 +350,7 @@ function ManageProductSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [editPreview, setEditPreview] = useState<string>("");
 
   // popup แก้ไข
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -364,21 +410,20 @@ function ManageProductSection() {
   };
 
   const openEditModal = (product: Product) => {
-    setEditProduct(product);
-    setEditForm({
-      // แทนที่ name/description เดิมด้วย nameTh/nameEn/descTh/descEn
-      nameTh: product.nameTh,
-      nameEn: product.nameEn,
-      descTh: product.descTh || "",
-      descEn: product.descEn || "",
-
-      price: product.price.toString(),
-      salePrice: product.salePrice?.toString() || "",
-      stock: product.stock.toString(),
-      categoryId: product.categoryId || "",
-    });
-    setEditFile(null);
-  };
+  setEditProduct(product);
+  setEditForm({
+    nameTh: product.nameTh,
+    nameEn: product.nameEn,
+    descTh: product.descTh || "",
+    descEn: product.descEn || "",
+    price: product.price.toString(),
+    salePrice: product.salePrice?.toString() || "",
+    stock: product.stock.toString(),
+    categoryId: product.categoryId || "",
+  });
+  setEditPreview(product.imageUrl || "");
+  setEditFile(null);
+};
 
   const closeEditModal = () => {
     setEditProduct(null);
@@ -386,15 +431,17 @@ function ManageProductSection() {
   };
 
   const handleEditChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value, files } = e.target as any;
-    if (name === "image" && files) {
-      setEditFile(files[0]);
-    } else {
-      setEditForm((f) => ({ ...f, [name]: value }));
-    }
-  };
+  e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+) => {
+  const { name, value, files } = e.target as any;
+  if (name === "image" && files) {
+    const f = files[0] as File;
+    setEditFile(f);
+    setEditPreview(URL.createObjectURL(f));
+  } else {
+    setEditForm((f) => ({ ...f, [name]: value }));
+  }
+};
 
   const handleEditSubmit = async (e: FormEvent) => {
     e.preventDefault();

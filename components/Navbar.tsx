@@ -15,12 +15,18 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // ✅ เพิ่มรายการ Auctions
   const navItems = [
     { key: "nav.home", href: "/" },
     { key: "nav.products", href: "/all-products" },
+    { key: "nav.auctions", href: "/auctions" }, // ← เพิ่ม
     { key: "nav.about", href: "/contact" },
     { key: "nav.qa", href: "/qa" },
   ];
+
+  // ✅ รองรับหน้าลูก เช่น /auctions/[id]
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow">
@@ -66,23 +72,20 @@ export default function Navbar() {
           {/* Center (desktop): Nav Links + Language */}
           <div className="hidden md:flex items-center space-x-8">
             <ul className="flex items-center space-x-6">
-              {navItems.map(({ key, href }) => {
-                const isActive = pathname === href;
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      className={`px-3 py-1 text-base font-medium rounded-md transition-colors ${
-                        isActive
-                          ? "bg-green-600 text-white"
-                          : "text-gray-700 hover:text-green-600"
-                      }`}
-                    >
-                      {t(key)}
-                    </Link>
-                  </li>
-                );
-              })}
+              {navItems.map(({ key, href }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`px-3 py-1 text-base font-medium rounded-md transition-colors ${
+                      isActive(href)
+                        ? "bg-green-600 text-white"
+                        : "text-gray-700 hover:text-green-600"
+                    }`}
+                  >
+                    {t(key)}
+                  </Link>
+                </li>
+              ))}
             </ul>
 
             {/* Language Switcher */}
@@ -161,22 +164,19 @@ export default function Navbar() {
         {mobileOpen && (
           <div className="md:hidden bg-white border-t shadow-sm">
             <ul className="flex flex-col divide-y">
-              {navItems.map(({ key, href }) => {
-                const isActive = pathname === href;
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      className={`block px-4 py-3 text-gray-700 hover:bg-green-50 transition-colors ${
-                        isActive ? "bg-green-600 text-white" : ""
-                      }`}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {t(key)}
-                    </Link>
-                  </li>
-                );
-              })}
+              {navItems.map(({ key, href }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`block px-4 py-3 text-gray-700 hover:bg-green-50 transition-colors ${
+                      isActive(href) ? "bg-green-600 text-white" : ""
+                    }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {t(key)}
+                  </Link>
+                </li>
+              ))}
             </ul>
             <div className="flex flex-col space-y-2 p-4 border-t">
               <div className="flex items-center space-x-2">
