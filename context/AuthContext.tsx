@@ -14,6 +14,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string | null; // ✅ เพิ่มบรรทัดนี้
 }
 
 interface AuthContextValue {

@@ -81,21 +81,24 @@ const THAI_PROVINCES = [
   "อุบลราชธานี",
 ];
 
-interface ProvinceSelectProps {
+type ProvinceSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   value: string;
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
-}
+};
 
 export default function ProvinceSelect({
   value,
   onChange,
+  className = "",
+  ...props
 }: ProvinceSelectProps) {
   return (
     <select
       name="city"
       value={value}
       onChange={onChange}
-      className="w-full border p-2 rounded"
+      // base style แบบคอมแพ็ก + ต่อ class ภายนอกได้
+      className={`h-9 w-full rounded-lg border border-black/10 px-3 text-sm outline-none focus:ring-2 focus:ring-black/10 ${className}`}
+      {...props}
     >
       <option value="">-- เลือกจังหวัด --</option>
       {THAI_PROVINCES.map((prov) => (
