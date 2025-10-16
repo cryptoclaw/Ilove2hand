@@ -1,7 +1,7 @@
 // pages/admin/coupons.tsx
 import { GetServerSideProps, NextPage } from "next";
 import { useState, ChangeEvent, FormEvent } from "react";
-import Layout from "@/components/AdminLayout";
+import AdminModern from "../../components/AdminModern";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { adminGuard } from "@/lib/adminGuard";
@@ -153,7 +153,7 @@ const AdminCouponsPage: NextPage<Props> = ({ initial }) => {
   }
 
   return (
-    <Layout title="จัดการคูปอง (Admin)">
+    <AdminModern title="จัดการคูปอง (Admin)">
       <h1 className="text-3xl font-bold mb-4">จัดการคูปอง</h1>
       <Link href="/" className="text-blue-600 mb-6 block">&larr; กลับหน้าหลัก</Link>
 
@@ -300,7 +300,7 @@ const AdminCouponsPage: NextPage<Props> = ({ initial }) => {
           </div>
         ))}
       </div>
-    </Layout>
+    </AdminModern>
   );
 };
 

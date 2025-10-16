@@ -1,6 +1,6 @@
 // pages/admin/orders.tsx
 import { GetServerSideProps, NextPage } from "next";
-import Layout from "@/components/AdminLayout";
+import AdminModern from "../../components/AdminModern";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { adminGuard } from "@/lib/adminGuard";
@@ -87,7 +87,7 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
   };
 
   return (
-    <Layout title="จัดการคำสั่งซื้อ (Admin)">
+    <AdminModern title="จัดการคำสั่งซื้อ (Admin)">
       <h1 className="text-3xl font-bold mb-6">จัดการคำสั่งซื้อ</h1>
       <Link href="/" className="text-blue-600 mb-4 block">
         &larr; กลับหน้าหลัก
@@ -198,7 +198,7 @@ const AdminOrdersPage: NextPage<Props> = ({ orders: initialOrders }) => {
           ))}
         </div>
       )}
-    </Layout>
+    </AdminModern>
   );
 };
 

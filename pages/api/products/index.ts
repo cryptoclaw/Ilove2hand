@@ -1,120 +1,96 @@
 // pages/api/products/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import multer from "multer";
 import { prisma } from "@/lib/prisma";
-
-export const config = { api: { bodyParser: false } };
-
-const upload = multer({
-  /* ...unchanged... */
-});
-
-function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: any) {
-  return new Promise<void>((resolve, reject) =>
-    fn(req, res, (err: any) => (err ? reject(err) : resolve()))
-  );
-}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  await runMiddleware(req, res, upload.single("image"));
-
   if (req.method === "GET") {
-    // ดึง translations มาเต็มๆ ไม่กรอง locale
-    const raw = await prisma.product.findMany({
-      include: {
-        category: true,
-        translations: true,
-      },
+    // ดึงสินค้าทั้งหมด (จะขยายตามที่ต้องการได้)
+    const products = await prisma.product.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        translations: true,
+        category: true,
+      },
     });
-
-    // map ให้คืนทั้งสองภาษา
-    const items = raw.map((p) => {
-      const th = p.translations.find((t) => t.locale === "th");
-      const en = p.translations.find((t) => t.locale === "en");
-
-      return {
-        id: p.id,
-        nameTh: th?.name ?? "",
-        nameEn: en?.name ?? "",
-        descTh: th?.description ?? "",
-        descEn: en?.description ?? "",
-        price: p.price,
-        salePrice: p.salePrice,
-        stock: p.stock,
-        imageUrl: p.imageUrl,
-        category: p.category,
-        isFeatured: p.isFeatured,
-      };
-    });
-
-    return res.status(200).json({ items });
+    return res.status(200).json(products);
   }
 
   if (req.method === "POST") {
-    const file = (req as any).file as Express.Multer.File | undefined;
-    const {
-      nameTh,
-      nameEn,
-      descTh,
-      descEn,
-      price,
-      salePrice,
-      stock,
-      categoryId,
-    } = req.body;
-
-    if (!file) {
-      return res.status(400).json({ error: "ต้องระบุรูปสินค้า" });
-    }
-    if (!nameTh || !price) {
-      return res.status(400).json({ error: "ต้องระบุชื่อสินค้า (TH) และราคา" });
-    }
-
     try {
-      const newProduct = await prisma.product.create({
-        data: {
-          price: parseFloat(price),
-          salePrice: salePrice ? parseFloat(salePrice) : null,
-          stock: Number(stock) || 0,
-          imageUrl: `/uploads/products/${file.filename}`,
-          category: categoryId ? { connect: { id: categoryId } } : undefined,
-          translations: {
-            create: [
-              { locale: "th", name: nameTh, description: descTh || "" },
-              { locale: "en", name: nameEn || "", description: descEn || "" },
-            ],
+      const {
+        nameTh,
+        nameEn,
+        descTh,
+        descEn,
+        price,
+        salePrice,
+        stock,
+        categoryId,
+        imageUrl,
+        isFeatured,
+      } = req.body ?? {};
+
+      // validate ขั้นต่ำ
+      if (!nameTh || !nameEn) {
+        return res.status(400).json({ error: "กรุณาระบุชื่อสินค้า TH/EN" });
+      }
+      if (price == null || stock == null) {
+        return res.status(400).json({ error: "กรุณาระบุราคาและสต็อก" });
+      }
+
+      // สร้างสินค้า + translations ภายใน transaction
+      const created = await prisma.$transaction(async (tx) => {
+        const p = await tx.product.create({
+          data: {
+            price: Number(price),
+            salePrice:
+              salePrice != null && salePrice !== "" ? Number(salePrice) : null,
+            stock: Number(stock),
+            imageUrl: imageUrl || null,
+            isFeatured: !!isFeatured,
+            categoryId: categoryId || null,
           },
-        },
-        include: { translations: true },
+        });
+
+        // ผูกชื่อ/คำบรรยายตาม locale (schema มี ProductLocale)
+        await tx.productLocale.create({
+          data: {
+            productId: p.id,
+            locale: "th",
+            name: String(nameTh),
+            description: descTh ? String(descTh) : null,
+          },
+        });
+        await tx.productLocale.create({
+          data: {
+            productId: p.id,
+            locale: "en",
+            name: String(nameEn),
+            description: descEn ? String(descEn) : null,
+          },
+        });
+
+        return p;
       });
 
-      // คืนเหมือน GET: แปลงชื่อ–รายละเอียดกลับเป็นสองภาษา
-      const th = newProduct.translations.find((t) => t.locale === "th");
-      const en = newProduct.translations.find((t) => t.locale === "en");
-
-      return res.status(201).json({
-        id: newProduct.id,
-        nameTh: th?.name ?? "",
-        nameEn: en?.name ?? "",
-        descTh: th?.description ?? "",
-        descEn: en?.description ?? "",
-        price: newProduct.price,
-        salePrice: newProduct.salePrice,
-        stock: newProduct.stock,
-        imageUrl: newProduct.imageUrl,
-        categoryId: newProduct.categoryId,
-        isFeatured: newProduct.isFeatured,
+      // ส่งกลับข้อมูลหลัก + translations (เอาไว้ให้หน้าบ้านรีเฟรช)
+      const full = await prisma.product.findUnique({
+        where: { id: created.id },
+        include: { translations: true, category: true },
       });
+
+      return res.status(201).json(full);
     } catch (err: any) {
-      console.error(err);
-      return res.status(500).json({ error: err.message });
+      console.error("POST /api/products error:", err);
+      return res
+        .status(500)
+        .json({ error: err?.message || "Internal Server Error" });
     }
   }
 
   res.setHeader("Allow", ["GET", "POST"]);
-  res.status(405).end(`Method ${req.method} Not Allowed`);
+  return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
 }
