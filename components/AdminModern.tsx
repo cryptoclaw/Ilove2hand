@@ -30,7 +30,7 @@ export default function AdminModern({ title, actions, children }: Props) {
             <path d="M5 12L12 5L19 12L12 19L5 12Z" stroke="url(#g)" strokeWidth="2"/>
             <defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stopColor="#6ea8fe"/><stop offset="1" stopColor="#41d6c3"/></linearGradient></defs>
           </svg>
-          Aid‑gent Admin
+          2Hand Admin
         </div>
 
         <nav className="admin-nav">
