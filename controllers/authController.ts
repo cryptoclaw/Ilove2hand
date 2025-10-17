@@ -1,18 +1,25 @@
+// controllers/authController.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import * as authService from "@/services/authService";
-import { signToken } from "@/lib/auth";
+import * as authService from "../services/authService";
+import { serialize } from "cookie";
 
-function setAuthCookie(res: NextApiResponse, token: string, remember: boolean) {
-  const isProd = process.env.NODE_ENV === "production";
-  const parts = [
-    `token=${token}`,
-    "HttpOnly",
-    "Path=/",
-    "SameSite=Lax",
-  ];
-  if (remember) parts.push(`Max-Age=${60 * 60 * 24 * 7}`); // 7 วัน
-  if (isProd) parts.push("Secure");
-  res.setHeader("Set-Cookie", parts.join("; "));
+const COOKIE_NAME = "token";
+
+export async function registerHandler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+  try {
+    const { name, email, password } = req.body;
+    const user = await authService.register(name, email, password);
+    // จะตั้งคุกกี้ตอนสมัครเลยก็ได้ ถ้าอยาก auto-login:
+    // const { token } = await authService.login(email, password);
+    // setAuthCookie(res, token, /*remember=*/true);
+    return res.status(201).json(user);
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
 }
 
 export async function loginHandler(req: NextApiRequest, res: NextApiResponse) {
@@ -21,22 +28,34 @@ export async function loginHandler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
   try {
-    const { email, password, remember = false } = req.body || {};
-    const { user } = await authService.login(email, password); // ให้ service คืน user
-    const token = signToken({ id: user.id, role: user.role });
+    const { email, password, remember } = req.body as {
+      email: string;
+      password: string;
+      remember?: boolean;
+    };
+
+    const { user, token } = await authService.login(email, password);
+
+    // ✅ ตั้งคุกกี้ HttpOnly ให้ AuthContext ดึงโปรไฟล์ได้
     setAuthCookie(res, token, !!remember);
-    // ไม่จำเป็นต้องส่ง token กลับแล้วก็ได้ แต่ส่ง user กลับเพื่อให้ client set state ได้ไว
+
+    // จะส่ง user กลับไปด้วยก็ได้ (ไม่จำเป็นต้องส่ง token ต่อแล้ว)
     return res.status(200).json({ user });
   } catch (err: any) {
-    return res.status(401).json({ error: err.message });
+    return res.status(401).json({ error: err.message || "Unauthorized" });
   }
 }
 
-export async function logoutHandler(_req: NextApiRequest, res: NextApiResponse) {
-  const isProd = process.env.NODE_ENV === "production";
+function setAuthCookie(res: NextApiResponse, token: string, remember: boolean) {
+  const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 4; // 30 วัน / 4 ชม.
   res.setHeader(
     "Set-Cookie",
-    `token=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${isProd ? "; Secure" : ""}`
+    serialize(COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge,
+    })
   );
-  return res.status(200).json({ success: true });
 }

@@ -23,10 +23,10 @@ type Item = {
 
 const items: Item[] = [
   { to: "/account", label: "บัญชีของฉัน", Icon: User },
-  { to: "/account/address", label: "ที่อยู่ของฉัน", Icon: Home },
-  { to: "/account/auctions", label: "การประมูลของฉัน", Icon: Gavel },
+
+  // { to: "/account/auctions", label: "การประมูลของฉัน", Icon: Gavel },
   { to: "/orders", label: "คำสั่งซื้อของฉัน", Icon: Package },
-  { to: "/account/password", label: "เปลี่ยนรหัสผ่าน", Icon: KeyRound },
+
   { to: "/logout", label: "ออกจากระบบ", Icon: LogOut, danger: true },
 ];
 

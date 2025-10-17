@@ -1,34 +1,42 @@
 // components/DiscountCarousel.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Flame, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import type { Product } from "@/types/product";
 
 interface Props {
   items: Array<Product & { stock: number }>;
+  viewAllHref?: string; // ไม่ส่ง = ไม่แสดง
 }
 
-type CartListItem = {
-  id: string;
-  quantity: number;
-  product: { id: string };
-};
+type CartListItem = { id: string; quantity: number; product: { id: string } };
 
-export default function DiscountCarousel({ items }: Props) {
-  const [idx, setIdx] = useState(0);
+const fmtTHB = (n: number) =>
+  new Intl.NumberFormat("th-TH", {
+    style: "currency",
+    currency: "THB",
+    maximumFractionDigits: 0,
+  }).format(n);
+
+export default function DiscountCarousel({ items, viewAllHref }: Props) {
   const total = items.length;
-
-  // ✅ ใช้ user เพื่อเช็คสถานะล็อกอิน (เบราว์เซอร์จะส่งคุกกี้ token ให้อัตโนมัติ)
   const { user } = useAuth();
   const router = useRouter();
-  const [addingId, setAddingId] = useState<string | null>(null);
 
-  // แสดงจำนวนการ์ดตามขนาดหน้าจอ
+  const [addingId, setAddingId] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState<number>(2);
+  const [idx, setIdx] = useState(0);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isOverflow, setIsOverflow] = useState(false);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  // responsive
   useEffect(() => {
     const updateCount = () => {
       const w = window.innerWidth;
@@ -44,15 +52,38 @@ export default function DiscountCarousel({ items }: Props) {
     return () => window.removeEventListener("resize", updateCount);
   }, [total]);
 
+  // overflow state
+  const recompute = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    const overflow = el.scrollWidth > el.clientWidth + 1;
+    setIsOverflow(overflow);
+    setAtStart(el.scrollLeft <= 1);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+  };
+  useEffect(() => {
+    recompute();
+    const el = trackRef.current;
+    const onScroll = () => recompute();
+    window.addEventListener("resize", recompute);
+    el?.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("resize", recompute);
+      el?.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   if (total === 0) return null;
+
+  // windowed items
+  const visible = useMemo(
+    () =>
+      Array.from({ length: displayCount }, (_, i) => items[(idx + i) % total]),
+    [displayCount, idx, items, total]
+  );
 
   const prev = () => setIdx((i) => (i - displayCount + total) % total);
   const next = () => setIdx((i) => (i + displayCount) % total);
-
-  const visible = Array.from({ length: displayCount }, (_, i) => {
-    const index = (idx + i) % total;
-    return items[index];
-  });
 
   const handleAdd = async (
     e: React.MouseEvent,
@@ -60,43 +91,28 @@ export default function DiscountCarousel({ items }: Props) {
   ) => {
     e.stopPropagation();
     if (p.stock === 0) return;
-
-    // ✅ ถ้าไม่ล็อกอินให้ไปหน้า login
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    if (!user) return router.push("/login");
 
     setAddingId(p.id);
     try {
-      // ✅ ดึงตะกร้า (ไม่ต้องส่ง Authorization header)
       const cartRes = await fetch("/api/cart");
       if (!cartRes.ok) throw new Error("Cannot fetch cart");
       const { items: cartItems } = (await cartRes.json()) as {
         items: CartListItem[];
       };
-
-      // ✅ หา quantity ปัจจุบันจาก item.product.id (ไม่ใช่ productId)
       const currentQty =
         cartItems.find((i) => i.product?.id === p.id)?.quantity ?? 0;
-
       if (currentQty + 1 > p.stock) {
         alert("จำนวนสินค้าเกินสต็อกที่มี");
-        setAddingId(null);
         return;
       }
-
-      // ✅ เพิ่มลงตะกร้า (ให้เบราว์เซอร์ส่งคุกกี้ token เอง)
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: p.id, quantity: 1 }),
       });
       if (res.ok) router.push("/cart");
-      else {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to add to cart");
-      }
+      else throw new Error("Failed to add");
     } catch (err) {
       console.error(err);
       alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
@@ -106,90 +122,148 @@ export default function DiscountCarousel({ items }: Props) {
   };
 
   return (
-    <div className="container relative rounded-2xl px-4 sm:px-6 lg:px-8 py-8 my-8 bg-gradient-to-r from-orange-200 via-orange-300 to-orange-400">
-      <div className="flex items-center justify-between mb-6">
+    <div className="relative my-10 rounded-2xl p-[1px] bg-gradient-to-br from-red-600 via-neutral-700 to-black shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+      {/* Header: Best Sellers vibe */}
+      <div className="rounded-t-2xl bg-white px-4 sm:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🔥</span>
-          <span className="text-xl sm:text-2xl font-bold text-gray-800">
-            สินค้าลดราคา
+          <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-red-600 text-white">
+            <Flame size={16} />
           </span>
+          <h2 className="text-lg sm:text-xl font-extrabold text-neutral-900">
+            ดีลลดราคาสุดฮอต
+          </h2>
         </div>
-        <button
-          onClick={() => router.push("/all-products?discount=1")}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition flex items-center gap-1 font-medium"
-        >
-          ดูทั้งหมด
-          <ChevronRight size={18} />
-        </button>
-      </div>
-
-      <button
-        onClick={prev}
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white p-2 sm:p-3 rounded-full shadow hover:bg-white transition z-20"
-      >
-        <ChevronLeft size={20} className="text-orange-600" />
-      </button>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {visible.map((p) => (
-          <div
-            key={p.id}
-            onClick={() => p.stock > 0 && router.push(`/products/${p.id}`)}
-            className="cursor-pointer bg-white rounded-xl border shadow-sm p-4 flex flex-col items-center text-center hover:shadow-lg transition"
+        {viewAllHref && (
+          <button
+            onClick={() => router.push(viewAllHref)}
+            className="rounded-md border border-red-600 bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-red-600 transition"
           >
-            <div className="relative w-full pt-[100%] mb-3 rounded-lg overflow-hidden">
-              <Image
-                src={p.imageUrl ?? "/images/placeholder.png"}
-                alt={p.name}
-                fill
-                className="object-cover"
-              />
-              {p.stock === 0 && (
-                <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center text-red-600 font-bold">
-                  สินค้าหมด
-                </div>
-              )}
-            </div>
-
-            <h3 className="text-gray-800 font-medium mb-1">{p.name}</h3>
-            {p.description && (
-              <p className="text-gray-500 text-xs mb-2 line-clamp-2">
-                {p.description}
-              </p>
-            )}
-
-            <div className="mb-3 flex items-center justify-center space-x-2">
-              {p.salePrice != null && (
-                <span className="text-gray-400 line-through text-sm">
-                  ฿{p.price}
-                </span>
-              )}
-              <span className="text-red-600 font-bold">
-                ฿{p.salePrice ?? p.price}
-              </span>
-            </div>
-
-            <button
-              onClick={(e) => handleAdd(e, p)}
-              disabled={addingId === p.id || p.stock === 0}
-              className={`mt-auto flex items-center justify-center p-2 rounded-full shadow transition disabled:opacity-50 ${
-                p.stock === 0
-                  ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}
-            >
-              {addingId === p.id ? "กำลังเพิ่ม..." : <Plus size={16} />}
-            </button>
-          </div>
-        ))}
+            ดูทั้งหมด
+          </button>
+        )}
       </div>
 
-      <button
-        onClick={next}
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white p-2 sm:p-3 rounded-full shadow hover:bg-white transition z-20"
-      >
-        <ChevronRight size={20} className="text-orange-600" />
-      </button>
+      {/* Arrows (outside) */}
+      {isOverflow && (
+        <>
+          {!atStart && (
+            <button
+              onClick={prev}
+              aria-label="เลื่อนไปซ้าย"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 grid h-10 w-10 place-items-center rounded-full bg-white shadow hover:shadow-lg"
+            >
+              <ChevronLeft size={18} className="text-neutral-900" />
+            </button>
+          )}
+          {!atEnd && (
+            <button
+              onClick={next}
+              aria-label="เลื่อนไปขวา"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 grid h-10 w-10 place-items-center rounded-full bg-white shadow hover:shadow-lg"
+            >
+              <ChevronRight size={18} className="text-neutral-900" />
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Content */}
+      <div className="rounded-b-2xl bg-white px-4 sm:px-6 py-6">
+        <div ref={trackRef} className="">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
+            {visible.map((p, i) => {
+              const hasSale = p.salePrice != null && p.salePrice < p.price;
+              const discount = hasSale
+                ? Math.round(
+                    ((p.price - (p.salePrice as number)) / p.price) * 100
+                  )
+                : 0;
+
+              const topRank = i < 3 ? i + 1 : null; // Top 1-3 ของหน้า
+
+              return (
+                <div
+                  key={p.id}
+                  onClick={() =>
+                    p.stock > 0 && router.push(`/products/${p.id}`)
+                  }
+                  className="group relative cursor-pointer rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm hover:shadow-md transition"
+                >
+                  {/* Top badge */}
+                  {topRank && (
+                    <div className="absolute -top-3 -right-2 z-10 flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 px-2 py-1 text-xs font-extrabold text-black shadow">
+                      <Crown size={14} className="text-yellow-700" />
+                      TOP {topRank}
+                    </div>
+                  )}
+
+                  <div className="relative w-full pt-[100%] overflow-hidden rounded-xl">
+                    <Image
+                      src={p.imageUrl ?? "/images/placeholder.png"}
+                      alt={p.name}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {/* HOT ribbon when discount ≥ 40% */}
+                    {discount >= 40 && (
+                      <div className="absolute -left-9 top-4 rotate-[-35deg]">
+                        <div className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1 text-[11px] font-extrabold text-white shadow">
+                          <Flame size={14} />
+                          HOT
+                        </div>
+                      </div>
+                    )}
+                    {p.stock === 0 && (
+                      <div className="absolute inset-0 grid place-items-center bg-white/80 text-red-600 font-bold">
+                        สินค้าหมด
+                      </div>
+                    )}
+                  </div>
+
+                  <h3 className="mt-3 line-clamp-2 text-sm font-semibold text-neutral-900">
+                    {p.name}
+                  </h3>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    {hasSale && (
+                      <span className="text-xs text-neutral-400 line-through">
+                        {fmtTHB(p.price)}
+                      </span>
+                    )}
+                    <span className="text-lg font-extrabold text-red-600">
+                      {fmtTHB(hasSale ? (p.salePrice as number) : p.price)}
+                    </span>
+                    {hasSale && (
+                      <span className="ml-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-600">
+                        −{discount}%
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-1 text-[11px] text-neutral-500">
+                    คงเหลือ {p.stock} ชิ้น
+                  </div>
+
+                  <button
+                    onClick={(e) => handleAdd(e, p)}
+                    disabled={addingId === p.id || p.stock === 0}
+                    className={`mt-3 flex w-full items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold transition
+                      ${
+                        p.stock === 0
+                          ? "bg-neutral-200 text-neutral-500 cursor-not-allowed"
+                          : "border border-red-600 bg-neutral-900 text-white hover:bg-red-600"
+                      }`}
+                    aria-label={`เพิ่ม ${p.name} ลงตะกร้า`}
+                  >
+                    {addingId === p.id ? "กำลังเพิ่ม..." : <Plus size={16} />}
+                    {addingId === p.id ? null : "เพิ่มลงตะกร้า"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

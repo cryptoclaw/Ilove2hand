@@ -28,7 +28,7 @@ const fmtTHB = (n: number) => n.toLocaleString("th-TH");
 export default function CartPage() {
   const { t, lang } = useTranslation("common");
   const router = useRouter();
-  const { user } = useAuth(); // ✅ ใช้ user แทน token
+  const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,11 +38,11 @@ export default function CartPage() {
   const deliveryFee = items.length > 0 ? 0 : 0;
 
   const loadCart = async () => {
-    if (!user) return; // ✅ รอให้ล็อกอินก่อน
+    if (!user) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/cart?locale=${lang}`, {
-        credentials: "include", // ✅ แนบคุกกี้ HttpOnly
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to load cart");
       const data = await res.json();
@@ -66,7 +66,7 @@ export default function CartPage() {
 
     const res = await fetch("/api/cart", {
       method: "PATCH",
-      credentials: "include", // ✅
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId, quantity }),
     });
@@ -84,7 +84,7 @@ export default function CartPage() {
     if (!user) return;
     await fetch("/api/cart", {
       method: "DELETE",
-      credentials: "include", // ✅
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId }),
     });
@@ -94,7 +94,7 @@ export default function CartPage() {
   useEffect(() => {
     loadCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, lang]); // ✅ รอ user พร้อม + เปลี่ยนภาษา
+  }, [user, lang]);
 
   const subtotal = items.reduce((sum, it) => {
     const unit = it.product.salePrice ?? it.product.price;
@@ -186,8 +186,8 @@ export default function CartPage() {
                       <button
                         onClick={() => removeItem(item.id)}
                         className="shrink-0 rounded-full p-1.5 text-red-600 hover:bg-red-50"
-                        aria-label={t("cart.remove")}
-                        title={t("cart.remove")}
+                        aria-label="ลบสินค้าออก"
+                        title="ลบสินค้าออก"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -202,7 +202,8 @@ export default function CartPage() {
                             updateQuantity(item.id, item.quantity - 1)
                           }
                           className="grid h-8 w-8 place-items-center hover:bg-gray-50 focus:outline-none active:bg-gray-100 transition-colors"
-                          aria-label="decrease"
+                          aria-label="ลดจำนวน"
+                          title="ลดจำนวน"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
@@ -216,7 +217,8 @@ export default function CartPage() {
                             updateQuantity(item.id, item.quantity + 1)
                           }
                           className="grid h-8 w-8 place-items-center hover:bg-gray-50 focus:outline-none active:bg-gray-100 transition-colors"
-                          aria-label="increase"
+                          aria-label="เพิ่มจำนวน"
+                          title="เพิ่มจำนวน"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -242,18 +244,18 @@ export default function CartPage() {
             })}
           </div>
 
-          {/* ขวา: Order Summary */}
+          {/* ขวา: สรุปคำสั่งซื้อ */}
           <aside className="h-max rounded-2xl border border-black/10 bg-white p-4 shadow-sm md:sticky md:top-24">
-            <h2 className="mb-3 text-lg font-bold">Order Summary</h2>
+            <h2 className="mb-3 text-lg font-bold">สรุปคำสั่งซื้อ</h2>
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
+                <span className="text-gray-600">ยอดรวมสินค้า</span>
                 <span className="font-semibold">฿{fmtTHB(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  Discount{" "}
+                  ส่วนลด{" "}
                   {discountRate ? `(${Math.round(discountRate * 100)}%)` : ""}
                 </span>
                 <span
@@ -265,11 +267,11 @@ export default function CartPage() {
                 </span>
               </div>
               <div className="flex justify-between pb-2 border-b border-gray-100">
-                <span className="text-gray-600">Delivery Fee</span>
+                <span className="text-gray-600">ค่าจัดส่ง</span>
                 <span className="font-semibold">฿{fmtTHB(deliveryFee)}</span>
               </div>
               <div className="flex justify-between text-base">
-                <span className="font-bold">Total</span>
+                <span className="font-bold">ยอดชำระรวม</span>
                 <span className="font-extrabold">฿{fmtTHB(total)}</span>
               </div>
             </div>
@@ -277,9 +279,11 @@ export default function CartPage() {
             <button
               onClick={() => router.push("/checkout")}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-900"
+              aria-label="ไปชำระเงิน"
+              title="ไปชำระเงิน"
             >
               <CreditCard className="h-4 w-4" />
-              Go to Checkout
+              ไปชำระเงิน
             </button>
           </aside>
         </div>

@@ -14,9 +14,8 @@ type Item = { label: string; href: string };
 
 const items: Item[] = [
   { label: "หน้าแรก", href: "/" },
-  { label: "สินค้าประมูล", href: "/auction-list" },
+  { label: "สินค้าประมูล", href: "/auctions" },
   { label: "สินค้าพร้อมส่ง", href: "/all-products" },
-  { label: "หมวดหมู่สินค้า", href: "/categories" },
 ];
 
 function GuestActions() {
@@ -112,14 +111,14 @@ function UserActions() {
   return (
     <>
       {/* tracking */}
-      <Link
+      {/* <Link
         href="/orders"
         className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-gray-100"
         aria-label="ติดตามพัสดุ"
         title="ติดตามพัสดุ"
       >
         <Truck className="h-5 w-5 text-gray-800 hover:text-red-600 transition-colors" />
-      </Link>
+      </Link> */}
 
       {/* cart */}
       <Link
@@ -132,7 +131,7 @@ function UserActions() {
       </Link>
 
       {/* ✅ สวิตช์ภาษา: อยู่ขวาของตะกร้า ซ้ายของโปรไฟล์ */}
-      <div className="hidden md:flex items-center gap-2 mx-1">
+      {/* <div className="hidden md:flex items-center gap-2 mx-1">
         <Link
           href={pathname}
           locale="th"
@@ -157,7 +156,7 @@ function UserActions() {
         >
           EN
         </Link>
-      </div>
+      </div> */}
 
       {/* ปุ่ม + เมนูโปรไฟล์ */}
       <div className="relative" ref={boxRef}>
@@ -191,13 +190,13 @@ function UserActions() {
           >
             โปรไฟล์ของฉัน
           </Link>
-          <Link
+          {/* <Link
             href="/account/auctions"
             className="block px-3 py-2 text-sm hover:bg-gray-50"
             role="menuitem"
           >
             การประมูลของฉัน
-          </Link>
+          </Link> */}
           <Link
             href="/orders"
             className="block px-3 py-2 text-sm hover:bg-gray-50"
