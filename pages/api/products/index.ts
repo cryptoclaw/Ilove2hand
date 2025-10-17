@@ -1,41 +1,59 @@
 // pages/api/products/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { prisma } from "@/lib/prisma";
 
 export const config = { api: { bodyParser: false } };
 
+// ---- Multer storage ----
+const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+fs.mkdirSync(uploadDir, { recursive: true });
+
 const upload = multer({
-  /* ...unchanged... */
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || "");
+      cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: any) {
   return new Promise<void>((resolve, reject) =>
-    fn(req, res, (err: any) => (err ? reject(err) : resolve()))
+    fn(req as any, res as any, (err: any) => (err ? reject(err) : resolve()))
   );
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  await runMiddleware(req, res, upload.single("image"));
+function isMultipart(req: NextApiRequest) {
+  return (req.headers["content-type"] || "").includes("multipart/form-data");
+}
 
+async function readJsonBody(req: NextApiRequest) {
+  const chunks: Buffer[] = [];
+  await new Promise<void>((resolve, reject) => {
+    req.on("data", (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
+    req.on("end", () => resolve());
+    req.on("error", reject);
+  });
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw ? JSON.parse(raw) : {};
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // ---------------- GET ----------------
   if (req.method === "GET") {
-    // ดึง translations มาเต็มๆ ไม่กรอง locale
     const raw = await prisma.product.findMany({
-      include: {
-        category: true,
-        translations: true,
-      },
+      include: { category: true, translations: true },
       orderBy: { createdAt: "desc" },
     });
 
-    // map ให้คืนทั้งสองภาษา
     const items = raw.map((p) => {
       const th = p.translations.find((t) => t.locale === "th");
       const en = p.translations.find((t) => t.locale === "en");
-
       return {
         id: p.id,
         nameTh: th?.name ?? "",
@@ -54,8 +72,25 @@ export default async function handler(
     return res.status(200).json({ items });
   }
 
+  // ---------------- POST ----------------
   if (req.method === "POST") {
-    const file = (req as any).file as Express.Multer.File | undefined;
+    let body: any = {};
+    let filePath: string | null = null;
+
+    if (isMultipart(req)) {
+      // รับแบบ multipart
+      await runMiddleware(req, res, upload.single("image"));
+      const anyReq = req as any;
+      body = anyReq.body || {};
+      const file = anyReq.file as Express.Multer.File | undefined;
+      if (file) filePath = `/uploads/products/${file.filename}`;
+    } else {
+      // รับแบบ JSON (เพราะปิด bodyParser ไว้ ต้องอ่านเอง)
+      body = await readJsonBody(req);
+      // ในเคสนี้จะไม่ได้อัปไฟล์, อาจส่ง imageUrl มาแทน
+      filePath = null;
+    }
+
     const {
       nameTh,
       nameEn,
@@ -65,56 +100,59 @@ export default async function handler(
       salePrice,
       stock,
       categoryId,
-    } = req.body;
+      imageUrl, // เผื่อส่งมาในโหมด JSON
+    } = body;
 
-    if (!file) {
-      return res.status(400).json({ error: "ต้องระบุรูปสินค้า" });
+    if (!nameTh || price == null) {
+      return res
+        .status(400)
+        .json({ error: "ต้องระบุชื่อสินค้า (TH) และราคา" });
     }
-    if (!nameTh || !price) {
-      return res.status(400).json({ error: "ต้องระบุชื่อสินค้า (TH) และราคา" });
-    }
+
+    const finalImageUrl = filePath || imageUrl || null;
 
     try {
-      const newProduct = await prisma.product.create({
+      const created = await prisma.product.create({
         data: {
-          price: parseFloat(price),
-          salePrice: salePrice ? parseFloat(salePrice) : null,
+          price: Number(price),
+          salePrice: salePrice ? Number(salePrice) : null,
           stock: Number(stock) || 0,
-          imageUrl: `/uploads/products/${file.filename}`,
-          category: categoryId ? { connect: { id: categoryId } } : undefined,
+          imageUrl: finalImageUrl,
+          ...(categoryId
+            ? { category: { connect: { id: String(categoryId) } } }
+            : {}),
           translations: {
             create: [
-              { locale: "th", name: nameTh, description: descTh || "" },
-              { locale: "en", name: nameEn || "", description: descEn || "" },
+              { locale: "th", name: String(nameTh), description: String(descTh || "") },
+              { locale: "en", name: String(nameEn || ""), description: String(descEn || "") },
             ],
           },
         },
-        include: { translations: true },
+        include: { translations: true, category: true },
       });
 
-      // คืนเหมือน GET: แปลงชื่อ–รายละเอียดกลับเป็นสองภาษา
-      const th = newProduct.translations.find((t) => t.locale === "th");
-      const en = newProduct.translations.find((t) => t.locale === "en");
+      const th = created.translations.find((t) => t.locale === "th");
+      const en = created.translations.find((t) => t.locale === "en");
 
       return res.status(201).json({
-        id: newProduct.id,
+        id: created.id,
         nameTh: th?.name ?? "",
         nameEn: en?.name ?? "",
         descTh: th?.description ?? "",
         descEn: en?.description ?? "",
-        price: newProduct.price,
-        salePrice: newProduct.salePrice,
-        stock: newProduct.stock,
-        imageUrl: newProduct.imageUrl,
-        categoryId: newProduct.categoryId,
-        isFeatured: newProduct.isFeatured,
+        price: created.price,
+        salePrice: created.salePrice,
+        stock: created.stock,
+        imageUrl: created.imageUrl,
+        category: created.category,
+        isFeatured: created.isFeatured,
       });
     } catch (err: any) {
       console.error(err);
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: err.message || "Server error" });
     }
   }
 
   res.setHeader("Allow", ["GET", "POST"]);
-  res.status(405).end(`Method ${req.method} Not Allowed`);
+  return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
