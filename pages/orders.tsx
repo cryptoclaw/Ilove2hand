@@ -102,31 +102,31 @@ function pickFirstStringByKey(obj: unknown, keyRegex: RegExp): string | null {
 
 type TFunc = (key: string, params?: Record<string, unknown>) => string;
 
-function getItemName(it: OrderItem, t: TFunc): string {
-  const p = it.product ?? {};
-  // ลองจาก product ก่อน แล้วค่อยจากตัว item เอง (รองรับ title, productName, label, caption, ฯลฯ)
-  const fromProduct =
-    (p && (p as any).name) ||
-    (p && (p as any).title) ||
-    (p && (p as any).productName) ||
-    pickFirstStringByKey(p, /(name|title|label|caption)/i);
+// function getItemName(it: OrderItem, t: TFunc): string {
+//   const p = it.product ?? {};
+//   // ลองจาก product ก่อน แล้วค่อยจากตัว item เอง (รองรับ title, productName, label, caption, ฯลฯ)
+//   const fromProduct =
+//     (p && (p as any).name) ||
+//     (p && (p as any).title) ||
+//     (p && (p as any).productName) ||
+//     pickFirstStringByKey(p, /(name|title|label|caption)/i);
 
-  const fromItem =
-    it.productName ||
-    it.name ||
-    it.title ||
-    pickFirstStringByKey(it, /(name|title|label|caption)/i);
+//   const fromItem =
+//     it.productName ||
+//     it.name ||
+//     it.title ||
+//     pickFirstStringByKey(it, /(name|title|label|caption)/i);
 
-  const name = (fromProduct as string) ?? (fromItem as string) ?? null;
+//   const name = (fromProduct as string) ?? (fromItem as string) ?? null;
 
-  if (!name) {
-    // ช่วย debug ให้เห็นทรงจริงของ item
-    // (เปิด DevTools Console จะเห็นตัวอย่าง item ที่ไม่มีชื่อ)
-    // eslint-disable-next-line no-console
-    console.debug("Unknown item shape (no name-like key):", it);
-  }
-  return name ?? (t("unknownProduct") || "ไม่ระบุชื่อสินค้า");
-}
+//   // if (!name) {
+//   //   // ช่วย debug ให้เห็นทรงจริงของ item
+//   //   // (เปิด DevTools Console จะเห็นตัวอย่าง item ที่ไม่มีชื่อ)
+//   //   // eslint-disable-next-line no-console
+//   //   console.debug("Unknown item shape (no name-like key):", it);
+//   // }
+//   // return name ?? (t("unknownProduct") || "ไม่ระบุชื่อสินค้า");
+// }
 
 function getItemImage(it: OrderItem): string | null {
   const p = it.product ?? {};
@@ -371,7 +371,7 @@ export default function OrdersPage() {
                             {/* รายชื่อสินค้า */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                               {o.items.map((it) => {
-                                const pname = getItemName(it, t as TFunc);
+                                // const pname = getItemName(it, t as TFunc);
                                 const pimg = getItemImage(it);
 
                                 return (
@@ -383,7 +383,7 @@ export default function OrdersPage() {
                                       {pimg ? (
                                         <img
                                           src={pimg}
-                                          alt={pname}
+                                          // alt={pname}
                                           className="w-full h-full object-cover"
                                           loading="lazy"
                                         />
@@ -395,7 +395,7 @@ export default function OrdersPage() {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <p className="text-sm sm:text-base font-medium truncate">
-                                        {pname}
+                                        {/* {pname} */}
                                       </p>
                                       <p className="text-xs sm:text-sm text-gray-500">
                                         {it.quantity} ×{" "}

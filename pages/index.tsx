@@ -215,12 +215,12 @@ export default function HomePage({
         )}
       </Section>
 
-      {/* แบนเนอร์โปรโมชันย่อย */}
+      {/* แบนเนอร์โปรโมชันย่อย
       {subBanners?.length ? (
         <Section pad="dense">
           <Banner slides={subBanners} isPromotion />
         </Section>
-      ) : null}
+      ) : null} */}
 
       {/* ส่วนอื่น ๆ ที่คอมเมนต์ไว้คงเดิม */}
     </Layout>
