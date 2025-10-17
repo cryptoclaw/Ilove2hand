@@ -1,49 +1,12 @@
 /* styles/globals.css */
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Base layer: resets, typography, global elements */
-@layer base {
-  html {
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-  body {
-    background-color: #f0fdf4; /* Tailwind's bg-green-50 */
-    color: #1f2937;            /* Tailwind's text-gray-800 */
-    font-family: 'Prompt', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-                 "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-  }
-  a {
-    color: #16a34a; /* Tailwind's text-green-600 */
-    transition-property: color;
-    transition-duration: 150ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  a:hover {
-    color: #15803d; /* Tailwind's text-green-700 */
-  }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-weight: 700;
-  }
-}
-
 /* Components layer: reusable custom classes */
-@layer components {
+/* @layer components {
   .container {
     margin-left: auto;
     margin-right: auto;
@@ -97,14 +60,15 @@
     transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   .card:hover {
-    box-shadow: 0 10px 15px -3px rgba(16,185,129,0.1), 0 4px 6px -4px rgba(16,185,129,0.1);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1),
+      0 4px 6px -4px rgba(16, 185, 129, 0.1);
   }
   .heading-underline {
     display: inline-block;
     border-bottom: 4px solid #16a34a;
     padding-bottom: 0.25rem;
   }
-}
+} */
 
 /* Utilities layer: extra utility classes */
 @layer utilities {
@@ -113,7 +77,36 @@
     &::-webkit-scrollbar {
       display: none;
     }
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;     /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+/* utilities อื่น ๆ */
+@layer utilities {
+  .hide-edge-reveal::-ms-reveal,
+  .hide-edge-reveal::-ms-clear {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* ซ่อนปุ่มปฏิทิน native ของ Chrome/Edge แต่ยังคลิกได้ */
+  .date-input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 10px; /* ให้จุดคลิกทับไอคอน Lucide */
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0 !important; /* กันกรณีสไตล์อื่นทับ */
+    -webkit-appearance: none; /* กันกรณีพิมพ์ซ้ำเป็นภาพ */
+    appearance: none;
+    background: none;
+    color: transparent;
+    cursor: pointer;
+  }
+
+  /* กันเคอร์เซอร์พื้นที่ไอคอนดูเป็น text */
+  .date-input {
+    cursor: text;
   }
 }

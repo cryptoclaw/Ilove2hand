@@ -15,10 +15,7 @@ interface LayoutProps {
   title?: string;
 }
 
-export default function Layout({
-  children,
-  title = "2Hand",
-}: LayoutProps) {
+export default function Layout({ children, title = "2hand" }: LayoutProps) {
   const [showPromo, setShowPromo] = useState(false);
   const [showCookieConsent, setShowCookieConsent] = useState(false);
 
@@ -45,7 +42,7 @@ export default function Layout({
     <div className="flex flex-col min-h-screen bg-white">
       <Head>
         <title>{title}</title>
-        <meta name="description" content="ตลาดสินค้าเกษตรสดใหม่ ICN_FREEZE" />
+        <meta name="description" content="2hand" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -77,7 +74,7 @@ export default function Layout({
       )}
 
       {/* content with top margin so it doesn't sit under the fixed header */}
-      <main className="flex-grow w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20">
+      <main className="mb-20 flex-grow w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-10">
         {children}
       </main>
 

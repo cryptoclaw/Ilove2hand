@@ -43,14 +43,35 @@ export default function AdminSidebar() {
   // ✅ เพิ่มเมนู Auctions
   const navItems: NavItem[] = useMemo(
     () => [
-      { label: "Dashboard", href: "/admin/dashboard", icon: <BarChart2 size={20} /> },
-      { label: "Edited Pages", href: "/admin/home-manage", icon: <Settings size={20} /> },
-      { label: "Order Management", href: "/admin/orders", icon: <ClipboardList size={20} /> },
-      
+      {
+        label: "Dashboard",
+        href: "/admin/dashboard",
+        icon: <BarChart2 size={20} />,
+      },
+      {
+        label: "Edited Pages",
+        href: "/admin/home-manage",
+        icon: <Settings size={20} />,
+      },
+      {
+        label: "Order Management",
+        href: "/admin/orders",
+        icon: <ClipboardList size={20} />,
+      },
+
       { label: "Coupon", href: "/admin/coupons", icon: <Tag size={20} /> },
-      { label: "Contact", href: "/admin/qa", icon: <MessageSquare size={20} /> },
+      {
+        label: "Contact",
+        href: "/admin/qa",
+        icon: <MessageSquare size={20} />,
+      },
       // 🔥 เมนูจัดการประมูล
-      { label: "Auctions", href: "/admin/auctions", icon: <Gavel size={20} />, badge: liveCount },
+      {
+        label: "Auctions",
+        href: "/admin/auctions",
+        icon: <Gavel size={20} />,
+        badge: liveCount,
+      },
     ],
     [liveCount]
   );
@@ -69,11 +90,11 @@ export default function AdminSidebar() {
     const base =
       (isMobile
         ? active
-          ? "bg-white text-green-800"
-          : "text-white hover:bg-green-600"
+          ? "bg-white text-black"
+          : "text-white hover:bg-gray-900"
         : active
-          ? "bg-white text-green-800"
-          : "text-white hover:bg-green-600") +
+        ? "bg-white text-black"
+        : "text-white hover:bg-gray-900") +
       " flex items-center justify-between px-3 py-2 rounded-md transition-colors";
 
     return (
@@ -95,24 +116,21 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Mobile header + dropdown */}
-      <div className="md:hidden bg-green-800 text-white">
+      <div className="md:hidden bg-black text-white">
         <div className="flex items-center justify-between p-4">
           <button
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Toggle menu"
-            className="p-2 rounded-md hover:bg-green-700 transition"
+            className="p-2 rounded-md hover:bg-gray-900 transition"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
         {mobileOpen && (
-          <div className="bg-green-700 px-4 pb-4">
+          <div className="bg-gray-900 px-4 pb-4">
             <nav className="flex flex-col space-y-2">
               {navItems.map((item) => (
-                <div
-                  key={item.href}
-                  onClick={() => setMobileOpen(false)}
-                >
+                <div key={item.href} onClick={() => setMobileOpen(false)}>
                   {renderItem(item, true)}
                 </div>
               ))}
@@ -132,11 +150,11 @@ export default function AdminSidebar() {
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col justify-between bg-green-800 text-white p-6 w-64 h-screen">
+      <aside className="hidden md:flex flex-col justify-between bg-black text-white p-6 w-64 h-screen">
         <div>
           <div className="mb-8 flex items-center space-x-2">
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-              <span className="text-green-800 font-bold text-xl">H</span>
+              <span className="text-black font-bold text-xl">H</span>
             </div>
             <span className="text-xl font-semibold">2hand</span>
           </div>

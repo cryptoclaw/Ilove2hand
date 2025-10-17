@@ -1,12 +1,15 @@
 // pages/auctions/index.tsx
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+"use client";
+
+import { useEffect, useState } from "react";
+import Layout from "@/components/Layout";
+import AuctionCard from "@/components/AuctionCard";
 
 type Item = {
   id: string;
   title: string;
   currentPrice: number;
-  endAt: string;
+  endAt: string; // ISO
   status: string;
   product?: { imageUrl?: string | null };
   bids: { id: string; amount: number }[];
@@ -14,40 +17,53 @@ type Item = {
 
 export default function AuctionsIndex() {
   const [items, setItems] = useState<Item[]>([]);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState("");
 
   useEffect(() => {
-    const url = q ? `/api/auctions?q=${encodeURIComponent(q)}` : '/api/auctions';
-    fetch(url).then(r => r.json()).then(setItems).catch(console.error);
+    const url = q
+      ? `/api/auctions?q=${encodeURIComponent(q)}`
+      : "/api/auctions";
+    fetch(url)
+      .then((r) => r.json())
+      .then(setItems)
+      .catch(console.error);
   }, [q]);
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Auctions</h1>
+    <Layout title="ประมูล">
+      {/* ❌ เอา container ออกให้เท่ากับ all-products */}
+      <h1 className="mt-10 mb-4 text-2xl font-bold">รายการประมูล</h1>
 
-      <input
-        className="w-full border rounded-xl p-3"
-        placeholder="ค้นหา..."
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map(a => (
-          <Link key={a.id} href={`/auctions/${a.id}`} className="border rounded-2xl p-4 hover:shadow">
-            <div className="flex justify-between items-start">
-              <h2 className="font-semibold">{a.title}</h2>
-              <span className="text-xs px-2 py-1 bg-gray-100 rounded">฿{a.currentPrice.toLocaleString()}</span>
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              ปิด: {new Date(a.endAt).toLocaleString()}
-            </div>
-            {a.product?.imageUrl ? (
-              <img src={a.product.imageUrl} alt="" className="mt-3 rounded-xl h-36 w-full object-cover" />
-            ) : null}
-          </Link>
-        ))}
+      {/* Controls ให้สไตล์ใกล้เคียง all-products */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <input
+          className="flex-1 border rounded p-2"
+          placeholder="ค้นหาสินค้า/ชื่อรายการ"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
       </div>
-    </div>
+
+      {/* ✅ ใช้คอลัมน์เท่ากับ all-products: 2 / 3 / 5 */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+        {items.length > 0 ? (
+          items.map((a) => (
+            <AuctionCard
+              key={a.id}
+              id={a.id}
+              title={a.title}
+              imageUrl={a.product?.imageUrl ?? null}
+              currentPrice={a.currentPrice}
+              bidsCount={a.bids?.length ?? 0}
+              endAt={a.endAt}
+            />
+          ))
+        ) : (
+          <p className="col-span-full text-center text-gray-500">
+            ยังไม่มีรายการประมูล
+          </p>
+        )}
+      </div>
+    </Layout>
   );
 }

@@ -1,5 +1,5 @@
 {
-  "siteTitle": "ICN_FREEZE",
+  "siteTitle": "2hand",
   "categories": "หมวดหมู่",
   "onSale": "สินค้าลดราคา",
   "specialOffers": "ข้อเสนอพิเศษ",
@@ -20,7 +20,7 @@
   "login": "เข้าสู่ระบบ",
   "signup": "สมัครสมาชิก",
 
-  "allProducts": "สินค้าทั้งหมด",
+  "allProducts": "สินค้าพร้อมส่ง",
   "searchPlaceholder": "ค้นหาสินค้า...",
   "allCategories": "-- ทุกหมวดหมู่ --",
   "noProductsFound": "ไม่พบสินค้าตามเงื่อนไข",

@@ -43,7 +43,7 @@ export default function AllProductsPage({
 
   return (
     <Layout title={discount ? t("onSale") : t("allProducts")}>
-      <h1 className="text-3xl font-bold mb-4">
+      <h1 className="mt-10 mb-4 text-2xl font-bold">
         {discount ? t("onSale") : t("allProducts")}
       </h1>
 
