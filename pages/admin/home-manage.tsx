@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import Layout from "@/components/AdminLayout"; // ใช้ layout ที่คุณมี
+import AdminModern from "../../components/AdminModern";
+// ใช้ layout ที่คุณมี
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import type { GetServerSideProps } from "next";
@@ -65,7 +66,7 @@ export default function HomeManagePage() {
   const router = useRouter();
 
   return (
-    <Layout title="จัดการหน้าโฮม">
+    <AdminModern title="จัดการหน้าโฮม">
       {/* Header */}
       <h1 className="text-3xl font-bold mb-8 border-b border-gray-300 pb-4">
         จัดการหน้าโฮม
@@ -112,7 +113,7 @@ export default function HomeManagePage() {
       </div>
 
       {/* Footer / User info */}
-    </Layout>
+    </AdminModern>
   );
 }
 

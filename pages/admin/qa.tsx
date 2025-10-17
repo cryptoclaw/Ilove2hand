@@ -1,7 +1,7 @@
 // pages/admin/qa.tsx
 
 import { GetServerSideProps } from "next";
-import Layout from "@/components/AdminLayout";
+import AdminModern from "../../components/AdminModern";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { useState } from "react";
@@ -44,7 +44,7 @@ export default function AdminQaPage({ faqs }: Props) {
   };
 
   return (
-    <Layout title="จัดการคำถาม (Admin)">
+    <AdminModern title="จัดการคำถาม (Admin)">
       <h1 className="text-3xl font-bold mb-4">จัดการคำถาม (Admin)</h1>
       <Link href="/" className="text-blue-600 mb-4 block">
         &larr; กลับหน้าหลัก
@@ -80,7 +80,7 @@ export default function AdminQaPage({ faqs }: Props) {
           </div>
         ))}
       </div>
-    </Layout>
+    </AdminModern>
   );
 }
 

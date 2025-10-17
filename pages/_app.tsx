@@ -1,5 +1,6 @@
 // pages/_app.tsx
 import "@/styles/globals.css";
+import "@/styles/admin-modern.css";
 import type { AppProps } from "next/app";
 import { AuthProvider } from "../context/AuthContext";
 import Head from "next/head";
