@@ -1,4 +1,6 @@
 # Ilove2Hand
+[เว็บขายของมือสอง (3).pdf](https://github.com/user-attachments/files/23112565/3.pdf)
+<img width="1112" height="626" alt="image" src="https://github.com/user-attachments/assets/d970c06f-7514-411a-a636-3f61fcb38ec7" />
 
 โปรเจกต์เว็บไซต์ซื้อ-ขาย/ประมูลเสื้อผ้ามือสอง รองรับอัปโหลดรูปสินค้า ระบบประมูล และสั่งซื้อ
 
