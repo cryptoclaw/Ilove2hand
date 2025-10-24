@@ -1,0 +1,14 @@
+FROM node:20-bullseye-slim AS base
+WORKDIR /app
+
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* .npmrc* ./
+RUN if [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; else npm i; fi
+
+COPY prisma ./prisma
+RUN npx prisma generate
+COPY . .
+
+# คำสั่งจริง set จาก docker-compose
+CMD ["node", "-e", "console.log('Use docker-compose to run migrate/seed')"]

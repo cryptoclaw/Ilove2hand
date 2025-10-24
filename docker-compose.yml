@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: icn_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: icn_freeze
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d icn_freeze" ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: icn_migrator
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # ชี้ DB ภายในเครือข่าย compose
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/icn_freeze?schema=public"
+    command: sh -lc "npx prisma migrate deploy && npm run seed"
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: icn_app
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/icn_freeze?schema=public"
+      # (ถ้ามี env อื่นๆ ใส่เพิ่มได้)
+      # NEXTAUTH_URL: "http://localhost:3000"
+      # NEXTAUTH_SECRET: "please-change-this"
+    ports:
+      - "3000:3000"
+    volumes:
+      # ถ้าแอปรองรับอัพโหลดลง public/uploads ให้ bind-mount เพื่อเก็บไฟล์บนโฮสต์
+      - ./public/uploads:/app/public/uploads
+
+volumes:
+  db_data:

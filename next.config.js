@@ -2,24 +2,26 @@
 const nextTranslate = require("next-translate-plugin");
 
 /** @type {import('next').NextConfig} */
-module.exports = nextTranslate({
+const baseConfig = {
+  // ปรับตามต้องการ
   reactStrictMode: true,
-  swcMinify: true,
 
   // ✅ อนุญาตโหลดรูปจากโดเมนภายนอก
   images: {
-    // วิธีใหม่ที่แนะนำ
+    // ใช้รูปแบบใหม่ที่แนะนำ
     remotePatterns: [
       { protocol: "https", hostname: "picsum.photos" },
-      // เพิ่มได้ตามต้องการ:
+      // เพิ่มโดเมนจริงที่คุณใช้ “แบบระบุชัดเจน” เท่านั้น
+      // ตัวอย่าง:
       // { protocol: "https", hostname: "res.cloudinary.com" },
-      // { protocol: "https", hostname: "*.amazonaws.com" },
+      // { protocol: "https", hostname: "your-bucket.s3.amazonaws.com" },
     ],
-
-    // ถ้าคุณใช้ Next เวอร์ชันเก่ากว่าและ remotePatterns ยังใช้ไม่ได้
-    // ให้ใช้ domains แทน (อย่างใดอย่างหนึ่งพอ):
-    // domains: ["picsum.photos"],
+    // หมายเหตุ: ไม่รองรับ wildcard เช่น "*.amazonaws.com"
+    // ถ้าต้องใช้หลายโดเมน S3 ให้เพิ่มรายการที่ใช้จริงทีละรายการ
   },
 
-  // i18n.json ของ next-translate จะถูกอ่านอัตโนมัติจาก root
-});
+  // ถ้าคุณมี experimental/อื่นๆ ให้ใส่ที่นี่
+};
+
+// ✅ เปิดใช้งาน next-translate (จะอ่าน i18n.json อัตโนมัติที่ root)
+module.exports = nextTranslate(baseConfig);

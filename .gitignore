@@ -1,17 +1,23 @@
-# dependencies
+# Node / build / OS
 node_modules/
 .next/
-prisma/migrations/
+out/
+dist/
+coverage/
+*.log
+.DS_Store
 
-# env
+# Env จริงห้ามคอมมิต
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.local          # อนุญาตเฉพาะตัวอย่างที่ไม่มีความลับจริง
 
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
 
-# VSCode
-.vscode/
+# Uploads (ถ้าอยากกันไม่ให้ push)
+# public/uploads/
+
+# Docker
+docker-data/

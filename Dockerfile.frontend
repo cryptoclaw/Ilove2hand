@@ -1,0 +1,36 @@
+# ---------- Build stage ----------
+FROM node:20-bullseye-slim AS builder
+WORKDIR /app
+
+# dependencies
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* .npmrc* ./
+RUN if [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; else npm i; fi
+
+# prisma
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# source
+COPY . .
+RUN npm run build
+
+# ---------- Runtime stage ----------
+FROM node:20-bullseye-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# production deps
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* .npmrc* ./
+RUN if [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile --prod; \
+    elif [ -f yarn.lock ]; then yarn --frozen-lockfile --production; \
+    elif [ -f package-lock.json ]; then npm ci --omit=dev; else npm i --omit=dev; fi
+
+# build artifacts
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+
+EXPOSE 3000
+CMD ["npm", "run", "start"]
