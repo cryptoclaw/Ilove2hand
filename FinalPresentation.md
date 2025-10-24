@@ -1,8 +1,7 @@
 [เว็บขายของมือสอง (3).pdf](https://github.com/user-attachments/files/23112565/3.pdf)
+<img width="1112" height="626" alt="image" src="https://github.com/user-attachments/assets/d970c06f-7514-411a-a636-3f61fcb38ec7" />
 
 
-magick -density 180 "docs/เว็บขายของมือสอง (3).pdf[0]" -resize 1200 -quality 90 docs/pdf-cover.png
 
-[![เปิดดูสไลด์ (PDF)](./docs/pdf-cover.png)](./docs/เว็บขายของมือสอง%20\(3\).pdf)
 
 
