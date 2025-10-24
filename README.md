@@ -7,7 +7,7 @@
 ## 👥 Team Members
 - Thanatchai Chanabua  650610769 — Fullstack/Infra 
 - Purinee Montree 650612096 — Frontend/UXUI design
-- Purinee Montree 650612096 — Backend/DB
+- Santhod khiawaubon 650612101 — Backend/DB
 
 ## 🧰 Tech Stack
 - **Frontend**: Next.js (React), TypeScript, TailwindCSS
